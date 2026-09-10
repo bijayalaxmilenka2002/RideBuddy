@@ -1,0 +1,52 @@
+/*
+ * Design tokens.
+ *
+ * PROVISIONAL: the live Rocket AI site could not be reached from this
+ * environment, so these values are placeholders, not the real brand palette.
+ * Every colour, radius, shadow and font in the app resolves through this file,
+ * so matching the original design is a matter of editing these values - no
+ * component markup has to change.
+ */
+:root {
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f6f7f9;
+  --color-border: #e4e7ec;
+  --color-text: #101828;
+  --color-text-muted: #667085;
+  --color-primary: #1f7a55;
+  --color-primary-hover: #176243;
+  --color-primary-soft: #e8f5ef;
+  --color-danger: #b42318;
+  --color-warning: #b54708;
+  --color-success: #067647;
+
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --text-3xl: 2.75rem;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-8: 3rem;
+  --space-10: 4rem;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08);
+
+  --container: 1120px;
+  --transition: 150ms ease;
+}

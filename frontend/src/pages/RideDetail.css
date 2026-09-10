@@ -1,0 +1,88 @@
+.ride-detail__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.ride-detail__main,
+.ride-detail__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.ride-detail__heading {
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-4);
+}
+
+.ride-detail__facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.ride-detail__facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.ride-detail__facts dt {
+  color: var(--color-text-muted);
+}
+
+.ride-detail__facts dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+.ride-detail__share {
+  color: var(--color-primary);
+  font-size: var(--text-lg);
+}
+
+.ride-detail__members {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ride-detail__members li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.ride-detail__fare-form {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.ride-detail__booking,
+.ride-detail__admin-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ride-detail__admin-actions {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 900px) {
+  .ride-detail__layout { grid-template-columns: 1fr; }
+}
