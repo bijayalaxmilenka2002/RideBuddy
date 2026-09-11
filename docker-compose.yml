@@ -14,6 +14,9 @@ services:
   mongo:
     image: mongo:7
     restart: unless-stopped
+    # --quiet drops the per-connection chatter. Without it the healthcheck
+    # below logs six lines every few seconds and buries the API's own output.
+    command: ["mongod", "--quiet"]
     ports:
       - '27017:27017'
     volumes:
@@ -22,10 +25,10 @@ services:
       # The API waits for this, so it never starts against a database that is
       # not accepting connections yet.
       test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
-      interval: 5s
+      interval: 15s
       timeout: 5s
-      retries: 20
-      start_period: 20s
+      retries: 10
+      start_period: 30s
 
   api:
     build: ./backend

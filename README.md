@@ -160,6 +160,15 @@ docker compose exec api npm run seed
 
 `docker compose down` stops it; add `-v` to delete the database volume too.
 
+**Reading the output.** MongoDB logs a lot; lines marked `"s":"I"` are
+informational, not errors. To check the stack rather than read the scroll, use a
+second terminal:
+
+```bash
+docker compose ps              # all three containers, and mongo's health
+docker compose logs api --tail 20   # just the API's own output
+```
+
 ### Option B — run each part yourself
 
 **1. Start MongoDB**
