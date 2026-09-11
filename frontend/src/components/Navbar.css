@@ -1,9 +1,19 @@
+/* Fixed header. Transparent over the landing hero, solid once scrolled. */
 .navbar {
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 20;
+  left: 0;
+  right: 0;
+  z-index: 50;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
+  transition: background var(--transition), border-color var(--transition),
+    box-shadow var(--transition);
+}
+
+.navbar--transparent {
+  background: transparent;
+  border-bottom-color: transparent;
 }
 
 .navbar__inner {
@@ -11,24 +21,52 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  min-height: 64px;
+  height: var(--header-height);
 }
 
 .navbar__brand {
-  font-size: var(--text-lg);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.navbar__brand span {
-  color: var(--color-primary);
-}
-
-.navbar__links {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: 0.625rem;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  transition: color var(--transition);
 }
+
+.navbar--transparent .navbar__brand { color: #fff; }
+
+/* Centre anchors, landing page only, desktop only. */
+.navbar__sections { display: none; gap: var(--space-1); }
+
+@media (min-width: 900px) {
+  .navbar__sections { display: flex; }
+}
+
+.navbar__section-link {
+  padding: var(--space-2) 0.875rem;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  transition: color var(--transition), background var(--transition);
+}
+
+.navbar__section-link:hover { color: var(--color-primary); background: var(--color-muted); }
+
+.navbar--transparent .navbar__section-link { color: rgba(255, 255, 255, 0.8); }
+
+.navbar--transparent .navbar__section-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.navbar__links { display: flex; align-items: center; gap: var(--space-3); }
+
+/* The section anchors also appear in the mobile drawer; hide the duplicates
+   on desktop, where the centre nav already shows them. */
+.navbar__link--section { display: none; }
 
 .navbar__link {
   font-size: var(--text-sm);
@@ -38,48 +76,54 @@
 }
 
 .navbar__link:hover,
-.navbar__link.active {
-  color: var(--color-primary);
-}
+.navbar__link.active { color: var(--color-primary); }
 
-.navbar__user {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
+.navbar--transparent .navbar__link { color: rgba(255, 255, 255, 0.9); }
+.navbar--transparent .navbar__link:hover { color: #fff; }
+
+.navbar__user { font-size: var(--text-sm); color: var(--color-text-muted); }
+.navbar--transparent .navbar__user { color: rgba(255, 255, 255, 0.75); }
+
+.navbar--transparent .btn--ghost { color: #fff; border-color: rgba(255, 255, 255, 0.25); }
+.navbar--transparent .btn--ghost:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
 
 .navbar__toggle {
   display: none;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  justify-content: center;
   padding: var(--space-2);
   background: none;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border: 0;
+  border-radius: var(--radius-md);
+  color: var(--color-text);
   cursor: pointer;
 }
 
-.navbar__toggle span {
-  display: block;
-  width: 18px;
-  height: 2px;
-  background: var(--color-text);
-}
+.navbar--transparent .navbar__toggle { color: #fff; }
 
-@media (max-width: 768px) {
-  .navbar__toggle { display: flex; }
+@media (max-width: 899px) {
+  .navbar__toggle { display: inline-flex; }
+
+  .navbar__link--section { display: block; }
 
   .navbar__links {
     display: none;
     position: absolute;
-    inset: 64px 0 auto 0;
+    inset: var(--header-height) 0 auto 0;
     flex-direction: column;
     align-items: stretch;
     gap: var(--space-3);
-    padding: var(--space-4);
+    padding: var(--space-4) var(--space-5) var(--space-5);
     background: var(--color-surface);
     border-bottom: 1px solid var(--color-border);
     box-shadow: var(--shadow-md);
   }
 
   .navbar__links.is-open { display: flex; }
+
+  /* Inside the open drawer the surface is solid, so use normal text colours. */
+  .navbar__links.is-open .navbar__link,
+  .navbar__links.is-open .navbar__user { color: var(--color-text-muted); }
+
+  .navbar__links.is-open .navbar__link:hover { color: var(--color-primary); }
 }

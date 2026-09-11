@@ -1,6 +1,6 @@
 # Baseline notes
 
-## 1. The existing Rocket AI site could not be inspected
+## 1. The site's markup was supplied by hand; the site itself is still unreachable
 
 `https://ridebuddy-t4qb37.public.builtwithrocket.new` is **unreachable from this
 environment**. Every route out was denied by the network egress proxy:
@@ -23,8 +23,12 @@ with the site.
 - The original project's **source code was never accessed**. The GitHub repo
   this was built in was empty (no commits).
 
-Everything below is built from the written product spec, which was complete
-enough to determine the backend entirely.
+**Update:** the landing page's rendered HTML was later pasted into the session
+by the project owner, so the front end is no longer designed blind. See
+section 4.
+
+The backend below is built from the written product spec, which was complete
+enough to determine it entirely.
 
 ## 2. What is real
 
@@ -118,23 +122,51 @@ re-reviewed line by line. These were real defects, now fixed:
   deploy was run, so the walkthrough is unverified against the live dashboards,
   which change their wording from time to time.
 
-## 4. The visual layer is provisional
+## 4. The visual layer now follows the real design
 
-Because the original design could not be seen, the UI is deliberately plain and
-built to be re-skinned cheaply rather than to guess at the brand:
+The owner supplied the live landing page's rendered HTML. The front end was
+rebuilt from it, so the following are taken from the real site rather than
+invented:
 
-- Every colour, font size, spacing step, radius and shadow resolves through
-  `frontend/src/styles/tokens.css`. Matching the original palette and type is an
-  edit to that one file — no component markup changes.
-- Component styles sit next to their components (`Navbar.css`, `RideCard.css`,
-  …), so a single component can be restyled in isolation.
+- **Structure.** Fixed header that is transparent over the hero and turns solid
+  on scroll; full-height gradient hero with colour blobs, a particle field, an
+  "active pools" pill, the avatar stack and star rating, and a "Live Rides Near
+  You" preview card with three pools and three stat tiles; then How It Works,
+  Why RideBuddy, Vehicle Options, Trust & Safety, a closing CTA band, and the
+  dark footer.
+- **Copy.** Headlines, section labels, body copy, the six benefit cards, the six
+  safety points and the four safety-score figures are the site's own wording.
+- **Iconography.** The site uses `lucide-react`; the app now uses the same
+  package and the same icons, and the logo is the site's inline SVG.
 
-To align this with the original site, any one of these unblocks it:
+### What is reconstructed rather than copied
 
-1. Screenshots of each page (desktop and mobile).
-2. The site's HTML/CSS, or an export of the Rocket AI project.
-3. Allow-listing `*.builtwithrocket.new` in the environment's network policy, at
-   which point the site can be inspected directly.
+The compiled stylesheet (`/_next/static/css/*.css`) was not supplied, and the
+site is still unreachable from this container, so exact values were inferred:
+
+- **Palette.** Anchored on the hex values that appear inline in the markup:
+  `#0A7C6E` (the teal on the first avatar chip) as primary, `#F59E0B` as accent,
+  `#059669` as success, plus Tailwind's amber/blue/green 50-700 on the vehicle
+  cards. Surfaces, borders and both gradients are tuned to those anchors and are
+  a close match, not a byte-for-byte one.
+- **Type.** The site loads one Next.js font under a hashed class name
+  (`__variable_a11773`), which does not reveal which font it is. Inter and Plus
+  Jakarta Sans stand in for body and display. Two lines in `tokens.css` change
+  it.
+
+Pasting that stylesheet would let both be replaced exactly. Everything still
+resolves through `frontend/src/styles/tokens.css`, so it stays a one-file edit.
+
+### Screens with no reference
+
+Only the landing page's markup was supplied. The sign-up/login screen, ride
+discovery, ride creation and ride detail are **not** copies - no markup for them
+was available. They are styled to be consistent with the design system above,
+and the ride cards reuse the exact pattern the landing page's preview card uses
+for a ride (green pickup pin, amber drop pin, clock, vacancies in green when
+plentiful and amber when down to one). The published site routes its buttons to
+`/sign-up-login-screen`; that path redirects to `/signup` so existing links keep
+working.
 
 ## 5. Routes
 

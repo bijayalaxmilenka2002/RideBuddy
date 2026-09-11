@@ -97,6 +97,18 @@ Socket.IO events (JWT in the handshake): `ride:join`, `ride:leave`,
 `message:send`, and the broadcast `message:new`. Membership is re-checked
 against the database on every join and every message.
 
+## Design
+
+The front end follows the published RideBuddy site: its landing page was rebuilt
+from that site's markup, using the same structure, copy and `lucide-react`
+icons. The palette is reconstructed from the hex values that appear inline in
+that markup (teal `#0A7C6E`, amber `#F59E0B`), since the compiled stylesheet was
+not available, and the display font is a stand-in - see `docs/BASELINE.md` for
+exactly what is copied and what is inferred.
+
+Every colour, size, radius and shadow resolves through
+`frontend/src/styles/tokens.css`, so re-skinning is a one-file edit.
+
 ## Tests
 
 ```bash

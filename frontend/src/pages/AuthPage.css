@@ -1,17 +1,31 @@
+/* Auth screens. The live site uses a single combined sign-up/login screen that
+   was not part of the markup available here, so these keep the app's existing
+   two-screen flow and simply wear the brand's palette, type and card shape. */
 .auth {
   display: flex;
+  align-items: center;
   justify-content: center;
+  min-height: calc(100vh - var(--header-height));
   padding-block: var(--space-8);
 }
 
 .auth__card {
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
+  padding: var(--space-6);
 }
 
-.auth__card .page__subtitle {
+.auth__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-lg);
   margin-bottom: var(--space-5);
 }
+
+.auth__card .page__subtitle { margin-bottom: var(--space-5); }
 
 .auth__switch {
   margin-top: var(--space-4);
@@ -20,7 +34,4 @@
   color: var(--color-text-muted);
 }
 
-.auth__switch a {
-  color: var(--color-primary);
-  font-weight: 600;
-}
+.auth__switch a { color: var(--color-primary); font-weight: 600; }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../components/Logo';
 import './AuthPage.css';
 
 export default function Signup() {
@@ -32,6 +33,11 @@ export default function Signup() {
   return (
     <div className="container auth">
       <form className="card auth__card" onSubmit={handleSubmit}>
+        <div className="auth__brand">
+          <Logo size={32} iconSize={16} radius="var(--radius-md)" />
+          <span>RideBuddy</span>
+        </div>
+
         <h1 className="page__title">Create your account</h1>
         <p className="page__subtitle">Start pooling rides and splitting fares.</p>
 

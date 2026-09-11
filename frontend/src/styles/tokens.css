@@ -1,34 +1,66 @@
 /*
- * Design tokens.
+ * Design tokens, derived from the live RideBuddy site's markup.
  *
- * PROVISIONAL: the live Rocket AI site could not be reached from this
- * environment, so these values are placeholders, not the real brand palette.
- * Every colour, radius, shadow and font in the app resolves through this file,
- * so matching the original design is a matter of editing these values - no
- * component markup has to change.
+ * The site is Next.js + Tailwind using shadcn-style semantic colour names
+ * (background / foreground / muted / secondary / accent). Its compiled
+ * stylesheet was not available, so the palette below is reconstructed from the
+ * hex values that appear inline in the markup:
+ *
+ *   #0A7C6E  first avatar chip   -> primary (the brand teal)
+ *   #F59E0B  star fill, accent   -> accent
+ *   #059669  avatar chip         -> success
+ *   amber-50/700, blue-50/700, green-50/700 on the vehicle cards
+ *
+ * Everything else (the hero gradient, surfaces, borders) is tuned to those
+ * anchors. If you want an exact match, paste the site's stylesheet
+ * (/_next/static/css/*.css) and these values can be replaced one for one.
  */
 :root {
-  --color-bg: #ffffff;
-  --color-surface: #ffffff;
-  --color-surface-muted: #f6f7f9;
-  --color-border: #e4e7ec;
-  --color-text: #101828;
-  --color-text-muted: #667085;
-  --color-primary: #1f7a55;
-  --color-primary-hover: #176243;
-  --color-primary-soft: #e8f5ef;
-  --color-danger: #b42318;
-  --color-warning: #b54708;
-  --color-success: #067647;
+  /* Brand */
+  --color-primary: #0a7c6e;
+  --color-primary-hover: #086355;
+  --color-primary-light: #0e9c88;
+  --color-primary-soft: #e6f4f1;
+  --color-accent: #f59e0b;
+  --color-accent-hover: #d97f06;
 
-  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  /* Status */
+  --color-success: #059669;
+  --color-success-soft: #ecfdf5;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fef2f2;
+
+  /* Surfaces and text */
+  --color-bg: #f5f8f7;
+  --color-surface: #ffffff;
+  --color-secondary: #e6f4f1;
+  --color-muted: #eef2f1;
+  --color-border: #e2e8e6;
+  --color-text: #0d1f1c;
+  --color-text-muted: #64766f;
+
+  /* Gradients */
+  --gradient-hero: linear-gradient(145deg, #052e2a 0%, #084c45 42%, #0a7c6e 100%);
+  --gradient-primary: linear-gradient(135deg, #0a7c6e 0%, #0e9c88 100%);
+
+  /*
+   * The site loads a single Next.js font for both roles. Which one is not
+   * recoverable from the markup, so these are close stand-ins - change these
+   * two lines to switch the whole app's type.
+   */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;
   --text-lg: 1.125rem;
-  --text-xl: 1.5rem;
-  --text-2xl: 2rem;
-  --text-3xl: 2.75rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  /* The site's text-hero-md / text-hero-xl. */
+  --text-hero-md: clamp(1.875rem, 1.2rem + 2.6vw, 2.5rem);
+  --text-hero-xl: clamp(2.25rem, 1.2rem + 4.2vw, 3.5rem);
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -38,15 +70,21 @@
   --space-6: 2rem;
   --space-8: 3rem;
   --space-10: 4rem;
+  --space-14: 5rem;
 
+  /* Tailwind's rounded-lg / xl / 2xl, which the site uses throughout. */
   --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-pill: 999px;
 
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
-  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08);
+  --shadow-sm: 0 1px 2px rgba(13, 31, 28, 0.05);
+  --shadow-md: 0 4px 14px rgba(13, 31, 28, 0.07);
+  --shadow-elevated: 0 18px 40px -12px rgba(5, 46, 42, 0.28);
+  --shadow-primary-glow: 0 8px 20px -6px rgba(10, 124, 110, 0.45);
 
-  --container: 1120px;
+  --container: 1280px; /* max-w-screen-xl */
+  --header-height: 4rem; /* h-16 */
   --transition: 150ms ease;
 }
