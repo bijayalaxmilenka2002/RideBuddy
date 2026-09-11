@@ -1,0 +1,67 @@
+.route-map {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.route-map__canvas {
+  height: 260px;
+  width: 100%;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  /* Leaflet paints tiles beyond the rounded corners without this. */
+  overflow: hidden;
+  background: var(--color-muted);
+  z-index: 0;
+}
+
+@media (min-width: 768px) {
+  .route-map__canvas { height: 320px; }
+}
+
+/* Leaflet's own panes must sit under the fixed header and any dropdown. */
+.route-map__canvas .leaflet-pane,
+.route-map__canvas .leaflet-control { z-index: 1; }
+
+.route-map__marker-wrap { background: none; border: 0; }
+
+.route-map__marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(13, 31, 28, 0.35);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-sans);
+}
+
+.route-map__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.route-map__leg { display: inline-flex; align-items: center; gap: 6px; }
+
+.route-map__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.route-map__summary {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.route-map__summary--muted { color: var(--color-text-muted); font-weight: 500; }

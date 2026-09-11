@@ -133,6 +133,11 @@ test('every ride route requires authentication, and only the public ones do not'
     ['PATCH', '/api/rides/507f1f77bcf86cd799439011/requests/507f1f77bcf86cd799439012/accept'],
     ['PATCH', '/api/rides/507f1f77bcf86cd799439011/requests/507f1f77bcf86cd799439012/reject'],
     ['PATCH', '/api/rides/507f1f77bcf86cd799439011/requests/mine/withdraw'],
+    // The map proxy must not be open to anonymous callers: it spends our
+    // budget against a free public service.
+    ['GET', '/api/places/search?q=koramangala'],
+    ['GET', '/api/places/reverse?lng=77.6&lat=12.9'],
+    ['GET', '/api/places/route?fromLng=77.6&fromLat=12.9&toLng=77.7&toLat=13.0'],
   ];
 
   for (const [method, path] of PROTECTED) {

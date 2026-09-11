@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Crosshair, X } from 'lucide-react';
 import { api } from '../lib/api';
+import PlaceSearch from '../components/PlaceSearch';
 import RideCard from '../components/RideCard';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
@@ -16,7 +17,9 @@ export default function Rides() {
   const [vehicleType, setVehicleType] = useState('');
   const [joiningId, setJoiningId] = useState(null);
   // When set, discovery is restricted to pools starting near this point.
+  // Either a GPS fix or a place picked from the map search.
   const [near, setNear] = useState(null);
+  const [nearPlace, setNearPlace] = useState(null);
   const [radiusKm, setRadiusKm] = useState(10);
   const [locating, setLocating] = useState(false);
   // What is typed, and the debounced value actually sent to the API.
@@ -75,6 +78,7 @@ export default function Rides() {
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         setNear({ lng: coords.longitude, lat: coords.latitude });
+        setNearPlace({ name: 'My current location', coordinates: [coords.longitude, coords.latitude] });
         setLocating(false);
       },
       () => {
@@ -149,7 +153,14 @@ export default function Rides() {
                 <option value={10}>Within 10 km</option>
                 <option value={25}>Within 25 km</option>
               </select>
-              <button type="button" className="btn btn--ghost" onClick={() => setNear(null)}>
+              <button
+                type="button"
+                className="btn btn--ghost"
+                onClick={() => {
+                  setNear(null);
+                  setNearPlace(null);
+                }}
+              >
                 <X size={14} /> Clear
               </button>
             </>
@@ -168,6 +179,30 @@ export default function Rides() {
           <Link to="/rides/new" className="btn btn--primary">Create ride</Link>
         </div>
       </header>
+
+      {/* Search around a place instead of your own position. */}
+      {near ? (
+        <p className="rides__near-note">
+          Showing rides starting within {radiusKm} km of <strong>{nearPlace?.name || 'your location'}</strong>.
+        </p>
+      ) : (
+        <div className="rides__near-picker">
+          <PlaceSearch
+            id="nearPlace"
+            label="Or find rides near a place"
+            value={nearPlace}
+            onSelect={(place) => {
+              setNearPlace(place);
+              setNear({ lng: place.coordinates[0], lat: place.coordinates[1] });
+            }}
+            onClear={() => {
+              setNearPlace(null);
+              setNear(null);
+            }}
+            placeholder="e.g. Koramangala, Bengaluru"
+          />
+        </div>
+      )}
 
       {status === 'error' && <ErrorState message={error} onRetry={load} />}
       {status === 'loading' && <Loader label="Loading rides…" />}

@@ -113,9 +113,16 @@ re-reviewed line by line. These were real defects, now fixed:
   documented route-prefill link, so its entry is flagged `prefillsRoute: false`
   and the UI says so. A real integration would need partner credentials as
   environment variables; none are read today.
-- **No place autocomplete.** Ride creation takes coordinates directly (with a
-  "use my current location" button for pickup). A maps/places provider would
-  replace those number inputs.
+- **Maps are built but never called for real from here.** Place search
+  (Nominatim), routing (OSRM) and the OSM tile server are all blocked by this
+  container's egress policy, so no live geocode, route or tile has been
+  fetched. What *was* verified: 13 unit tests drive the service with a stubbed
+  `fetch` and assert the response mapping, GeoJSON coordinate order, the cache,
+  the required User-Agent, and that an upstream failure becomes a 502 without
+  leaking the upstream hostname; and in a real browser the map renders its two
+  markers, the route polyline, the distance/duration summary and the required
+  OpenStreetMap attribution against a stubbed route. The live calls will only
+  be exercised on a machine that can reach openstreetmap.org.
 - **The application has never been run against a database from here.** Every
   check that does not need one has been run and passes: the frontend production
   build, ESLint (clean), 58 backend tests, all 8 routes rendered in Chromium at

@@ -42,11 +42,15 @@ they can be changed in one place and unit-tested without HTTP.
 ### Technology
 
 - **Frontend** — React 18, Vite 5, React Router 6, plain CSS with design tokens,
-  `socket.io-client`, `lucide-react` icons. No CSS framework, no state library:
-  server state is fetched per screen, auth lives in a React context.
+  `socket.io-client`, `lucide-react` icons, `leaflet` for maps. No CSS
+  framework, no state library: server state is fetched per screen, auth lives
+  in a React context.
 - **Backend** — Node.js 18+, Express 4, Mongoose 8, Socket.IO 4, zod,
   jsonwebtoken, bcryptjs, helmet, cors, express-rate-limit.
 - **Database** — MongoDB 7 with a `2dsphere` index for "rides near me".
+- **Maps** — OpenStreetMap, end to end and free: Nominatim for place search,
+  OSRM for the driving route, OSM raster tiles for the map. **No API key and no
+  credit card.** Every lookup is proxied by this API (see below).
 - **Tests** — Node's built-in test runner (`node --test`). No extra framework.
 
 Everything runs locally. There is no third-party backend service.
@@ -111,6 +115,11 @@ cp frontend/.env.example frontend/.env   # optional
 | `JWT_EXPIRES_IN` | no | `7d` | Token lifetime |
 | `CORS_ORIGINS` | no | `http://localhost:5173` | Comma-separated browser origins |
 | `UBER_CLIENT_ID` | no | — | Attribution only on the hand-off link |
+| `NOMINATIM_URL` | no | public Nominatim | Geocoding service |
+| `OSRM_URL` | no | public OSRM | Routing service |
+| `PLACES_USER_AGENT` | no | `RideBuddy/1.0` | Identifies you to Nominatim — **set a real contact address in production** |
+| `PLACES_COUNTRY_CODES` | no | worldwide | Bias search, e.g. `in` for India |
+| `PLACES_MIN_GAP_MS` | no | `1100` | Gap between geocoding calls; `0` if self-hosted |
 
 ```ini
 # backend/.env
@@ -310,6 +319,13 @@ regex-escaped) · `?from=&to=` (departure window) · `?lng=&lat=&radiusKm=`
 | PATCH | `/api/rides/:id/requests/:requestId/accept` | admin | Seat the rider |
 | PATCH | `/api/rides/:id/requests/:requestId/reject` | admin | Decline |
 
+### Maps
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| GET | `/api/places/search?q=` | ✔ | Place autocomplete |
+| GET | `/api/places/reverse?lng=&lat=` | ✔ | Turn a GPS fix into a place name |
+| GET | `/api/places/route?fromLng=&fromLat=&toLng=&toLat=` | ✔ | Driving route, distance, duration |
+
 ### Other
 | Method | Path | Purpose |
 | --- | --- | --- |
@@ -320,16 +336,46 @@ regex-escaped) · `?from=&to=` (departure window) · `?lng=&lat=&radiusKm=`
 
 ---
 
+## 7b. Maps and place search
+
+Creating a ride used to mean typing raw longitude and latitude. It now uses a
+type-ahead place search, and every ride shows its route on a map.
+
+**Why the lookups go through the backend** rather than straight from the
+browser:
+
+- Nominatim's usage policy requires a real identifying `User-Agent`, asks for
+  no more than one request per second, and encourages caching. All three live
+  in `backend/src/services/places.service.js` — one place to get right.
+- The browser never depends on a third party's CORS headers.
+- Swapping provider, or pointing at your own self-hosted Nominatim/OSRM, is two
+  environment variables and no code change.
+- The endpoints require a login and are separately rate limited, so the proxy
+  cannot be abused by anonymous callers.
+
+Results are cached in memory (10 minutes for places, an hour for routes) and
+outbound geocoding calls are queued one per second.
+
+**If the map services are unreachable**, the app degrades rather than breaks:
+the ride map still shows both pins joined by a dashed straight line and says
+"routing unavailable", and place search reports the error instead of blocking
+the form. Nothing in the core ride flow depends on them.
+
+Tiles are © OpenStreetMap contributors; the attribution control is required by
+the licence and is rendered on every map.
+
 ## 8. Main application workflow
 
 1. **Sign up / log in** → token stored, session restored on reload.
-2. **Create a ride** — pick vehicle, pickup and drop (coordinates), departure
-   time, and whether you want to approve riders. Capacity comes from the
+2. **Create a ride** — pick vehicle, then search for your pickup and
+   destination by name (or tap *Use my current location*), set a departure
+   time, and choose whether to approve riders. A live map previews the route
+   before you create it. Capacity comes from the
    vehicle type; a `maxCapacity` sent by a client is stripped and ignored. You
    become the admin and take the first seat.
 3. **Discover** — browse open rides, filter by vehicle, search by place name or
-   departure window, or use **Near me** for a radius search around your GPS
-   position.
+   departure window, use **Near me** for a radius search around your GPS
+   position, or search around any place by name.
 4. **Join** — either take a free seat instantly, or, on a screened ride, send a
    request with a note and wait for the admin to accept or reject it.
 5. **The ride fills** — the seat is granted by a single atomic conditional
@@ -337,8 +383,8 @@ regex-escaped) · `?from=&to=` (departure window) · `?lng=&lat=&radiusKm=`
    `OPEN → LOCKED` in the same operation and drops out of discovery. If an
    accept fills the last seat, everyone still waiting is rejected rather than
    left hanging.
-6. **Coordinate** — members get each other's phone numbers and a private
-   real-time chat.
+6. **Coordinate** — members get each other's phone numbers, a map of the route
+   with its distance and driving time, and a private real-time chat.
 7. **Split the fare** — after booking, the admin enters the real fare and the
    server computes `individualFare = totalFare / members.length`.
 8. **Finish** — the admin marks the ride completed or cancels it. A co-rider

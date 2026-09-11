@@ -34,6 +34,13 @@ export const api = {
   login: (data) => request('/auth/login', { method: 'POST', body: data, auth: false }),
   me: () => request('/auth/me'),
 
+  // Places: free OpenStreetMap search and routing, proxied by our own API.
+  searchPlaces: (q, limit) =>
+    request(`/places/search?q=${encodeURIComponent(q)}${limit ? `&limit=${limit}` : ''}`),
+  reverseGeocode: (lng, lat) => request(`/places/reverse?lng=${lng}&lat=${lat}`),
+  getRoute: (from, to) =>
+    request(`/places/route?fromLng=${from[0]}&fromLat=${from[1]}&toLng=${to[0]}&toLat=${to[1]}`),
+
   // Profile
   getProfile: () => request('/users/me'),
   updateProfile: (data) => request('/users/me', { method: 'PATCH', body: data }),

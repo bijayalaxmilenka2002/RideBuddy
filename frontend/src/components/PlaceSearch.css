@@ -1,0 +1,102 @@
+.place-search { position: relative; }
+
+.place-search__control { position: relative; display: flex; align-items: center; }
+.place-search__control .field__input { width: 100%; padding-right: 2.25rem; }
+
+.place-search__spinner {
+  position: absolute;
+  right: var(--space-3);
+  color: var(--color-text-muted);
+  animation: place-spin 900ms linear infinite;
+}
+
+@keyframes place-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* The confirmed selection, shown instead of the input. */
+.place-search__chosen {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.7rem var(--space-3);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  background: var(--color-secondary);
+  min-width: 0;
+}
+
+.place-search__chosen-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.place-search__clear {
+  display: inline-flex;
+  padding: 2px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.place-search__clear:hover { color: var(--color-danger); }
+.place-search__pin { color: var(--color-primary); flex-shrink: 0; }
+.place-search__locate { margin-top: var(--space-2); align-self: flex-start; }
+
+.place-search__results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  margin: var(--space-1) 0 0;
+  padding: var(--space-1);
+  list-style: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.place-search__result {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.place-search__result:hover { background: var(--color-muted); }
+
+.place-search__result > span { display: flex; flex-direction: column; min-width: 0; }
+.place-search__name { font-size: var(--text-sm); font-weight: 600; }
+
+.place-search__label {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.place-search__error {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}

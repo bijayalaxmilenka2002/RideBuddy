@@ -336,3 +336,11 @@ h1, h2, h3 {
 }
 
 .rides__search { flex: 2 1 14rem; }
+
+.rides__near-picker { max-width: 28rem; margin-bottom: var(--space-5); }
+
+.rides__near-note {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-4);
+}

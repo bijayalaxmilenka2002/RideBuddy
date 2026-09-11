@@ -28,6 +28,11 @@ class ApiError extends Error {
   static conflict(message) {
     return new ApiError(409, message);
   }
+
+  /** An upstream service we depend on failed - not the caller's fault. */
+  static badGateway(message = 'An upstream service failed') {
+    return new ApiError(502, message);
+  }
 }
 
 module.exports = ApiError;

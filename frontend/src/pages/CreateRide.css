@@ -36,3 +36,5 @@
   flex-direction: column;
   gap: 2px;
 }
+
+.create-ride__preview { margin-bottom: var(--space-4); }

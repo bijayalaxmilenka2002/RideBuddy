@@ -26,6 +26,22 @@ const env = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   // Optional, attribution only - RideBuddy does not call the Uber API.
   uberClientId: process.env.UBER_CLIENT_ID || null,
+
+  /**
+   * Free OpenStreetMap services, proxied through this API so the usage policy
+   * (identify yourself, at most one request per second, cache results) is
+   * honoured in one place. Swap these for a self-hosted instance or another
+   * provider without touching any other file.
+   */
+  nominatimUrl: process.env.NOMINATIM_URL || 'https://nominatim.openstreetmap.org',
+  osrmUrl: process.env.OSRM_URL || 'https://router.project-osrm.org',
+  // Nominatim requires a real identifier; add a contact address in production.
+  placesUserAgent: process.env.PLACES_USER_AGENT || 'RideBuddy/1.0 (self-hosted)',
+  // Bias search results towards one country, e.g. "in" for India. Blank = worldwide.
+  placesCountryCodes: process.env.PLACES_COUNTRY_CODES || '',
+  // Minimum gap between outbound geocoding calls. The public Nominatim asks
+  // for 1/second; drop it to 0 if you self-host one.
+  placesMinGapMs: Number(process.env.PLACES_MIN_GAP_MS ?? 1100),
   corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:5173')
     .split(',')
     .map((origin) => origin.trim())

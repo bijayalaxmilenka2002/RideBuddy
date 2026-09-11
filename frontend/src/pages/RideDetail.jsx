@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 import StatusBadge from '../components/StatusBadge';
 import ChatPanel from '../components/ChatPanel';
 import RideRequests from '../components/RideRequests';
+import RouteMap from '../components/RouteMap';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import { formatDateTime, formatFare, pluralize } from '../lib/format';
@@ -92,6 +93,16 @@ export default function RideDetail() {
                 <dd>{ride.vacancies > 0 ? pluralize(ride.vacancies, 'seat') + ' left' : 'Full'}</dd>
               </div>
             </dl>
+          </section>
+
+          <section className="card">
+            <h2 className="ride-detail__heading">Route</h2>
+            <RouteMap
+              from={ride.pickupLocation.coordinates}
+              to={ride.dropLocation.coordinates}
+              fromName={ride.pickupLocation.name}
+              toName={ride.dropLocation.name}
+            />
           </section>
 
           <section className="card">

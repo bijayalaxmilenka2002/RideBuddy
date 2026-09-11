@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
+import PlaceSearch from '../components/PlaceSearch';
+import RouteMap from '../components/RouteMap';
 import './CreateRide.css';
 
 // Shown next to the vehicle picker. The server derives the real value.
@@ -14,12 +16,9 @@ const localInputValue = (date) => {
 
 const EMPTY = {
   vehicleType: 'CAB',
-  pickupName: '',
-  pickupLng: '',
-  pickupLat: '',
-  dropName: '',
-  dropLng: '',
-  dropLat: '',
+  // Chosen from the place search: { name, coordinates: [lng, lat] }.
+  pickup: null,
+  drop: null,
   departureTime: '',
   // When true, riders apply and the admin accepts or rejects them.
   approvalRequired: false,
@@ -35,38 +34,22 @@ export default function CreateRide() {
 
   const update = (field) => (event) => setForm({ ...form, [field]: event.target.value });
 
-  const useMyLocation = () => {
-    if (!navigator.geolocation) {
-      setError('Your browser does not support geolocation');
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) =>
-        setForm((prev) => ({
-          ...prev,
-          pickupLng: coords.longitude.toFixed(6),
-          pickupLat: coords.latitude.toFixed(6),
-        })),
-      () => setError('Could not read your location')
-    );
-  };
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
     setDetails([]);
+
+    if (!form.pickup || !form.drop) {
+      setError('Choose both a pickup point and a destination');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const { ride } = await api.createRide({
         vehicleType: form.vehicleType,
-        pickupLocation: {
-          name: form.pickupName,
-          coordinates: [Number(form.pickupLng), Number(form.pickupLat)],
-        },
-        dropLocation: {
-          name: form.dropName,
-          coordinates: [Number(form.dropLng), Number(form.dropLat)],
-        },
+        pickupLocation: { name: form.pickup.name, coordinates: form.pickup.coordinates },
+        dropLocation: { name: form.drop.name, coordinates: form.drop.coordinates },
         departureTime: new Date(form.departureTime).toISOString(),
         approvalRequired: form.approvalRequired,
       });
@@ -108,28 +91,36 @@ export default function CreateRide() {
           <span className="field__hint">Capacity: {CAPACITY_HINT[form.vehicleType]}</span>
         </div>
 
-        <fieldset className="create-ride__group">
-          <legend className="field__label create-ride__legend">Pickup</legend>
-          <div className="field">
-            <input className="field__input" placeholder="Pickup name" value={form.pickupName} onChange={update('pickupName')} required />
-          </div>
-          <div className="field field--row">
-            <input className="field__input" type="number" step="any" min="-180" max="180" placeholder="Longitude" value={form.pickupLng} onChange={update('pickupLng')} required />
-            <input className="field__input" type="number" step="any" min="-90" max="90" placeholder="Latitude" value={form.pickupLat} onChange={update('pickupLat')} required />
-          </div>
-          <button type="button" className="btn btn--ghost" onClick={useMyLocation}>Use my current location</button>
-        </fieldset>
+        <PlaceSearch
+          id="pickup"
+          label="Pickup point"
+          value={form.pickup}
+          onSelect={(place) => setForm((prev) => ({ ...prev, pickup: place }))}
+          onClear={() => setForm((prev) => ({ ...prev, pickup: null }))}
+          placeholder="e.g. Andheri Station"
+          showUseMyLocation
+        />
 
-        <fieldset className="create-ride__group create-ride__group--spaced">
-          <legend className="field__label create-ride__legend">Destination</legend>
-          <div className="field">
-            <input className="field__input" placeholder="Destination name" value={form.dropName} onChange={update('dropName')} required />
+        <PlaceSearch
+          id="drop"
+          label="Destination"
+          value={form.drop}
+          onSelect={(place) => setForm((prev) => ({ ...prev, drop: place }))}
+          onClear={() => setForm((prev) => ({ ...prev, drop: null }))}
+          placeholder="e.g. BKC Tech Park"
+        />
+
+        {/* Confirms the route is the one they meant before the ride is created. */}
+        {form.pickup && form.drop && (
+          <div className="create-ride__preview">
+            <RouteMap
+              from={form.pickup.coordinates}
+              to={form.drop.coordinates}
+              fromName={form.pickup.name}
+              toName={form.drop.name}
+            />
           </div>
-          <div className="field field--row">
-            <input className="field__input" type="number" step="any" min="-180" max="180" placeholder="Longitude" value={form.dropLng} onChange={update('dropLng')} required />
-            <input className="field__input" type="number" step="any" min="-90" max="90" placeholder="Latitude" value={form.dropLat} onChange={update('dropLat')} required />
-          </div>
-        </fieldset>
+        )}
 
         <div className="field">
           <label className="field__label" htmlFor="departureTime">Departure time</label>
