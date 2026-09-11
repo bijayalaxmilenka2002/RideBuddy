@@ -1,0 +1,23 @@
+# Render blueprint. Free plan, no card required.
+# Import this repo at https://dashboard.render.com/select-repo?type=blueprint
+#
+# MONGO_URI and JWT_SECRET are marked sync:false: Render prompts for them at
+# deploy time and stores them encrypted, so no secret ever lands in git.
+services:
+  - type: web
+    name: ridebuddy-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false

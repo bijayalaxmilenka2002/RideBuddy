@@ -40,9 +40,11 @@ export const api = {
     ).toString();
     return request(`/rides${query ? `?${query}` : ''}`);
   },
+  listMyRides: () => request('/rides/mine'),
   getRide: (id) => request(`/rides/${id}`),
   createRide: (data) => request('/rides', { method: 'POST', body: data }),
   joinRide: (id) => request(`/rides/${id}/join`, { method: 'POST' }),
+  leaveRide: (id) => request(`/rides/${id}/leave`, { method: 'POST' }),
   cancelRide: (id) => request(`/rides/${id}/cancel`, { method: 'PATCH' }),
   completeRide: (id) => request(`/rides/${id}/complete`, { method: 'PATCH' }),
   setFare: (id, totalFare) => request(`/rides/${id}/fare`, { method: 'PATCH', body: { totalFare } }),

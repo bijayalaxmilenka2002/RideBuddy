@@ -52,13 +52,57 @@ Verified directly:
   coordinate validation, fare split (₹300 / 3 = ₹100), and the stripping of a
   client-supplied `maxCapacity` were each asserted in a script.
 
+## 2b. Defects found by review and fixed
+
+The code in section 2 had never been executed against a database, so it was
+re-reviewed line by line. These were real defects, now fixed:
+
+- **Any authenticated socket client could kill the server.** `ride:join` and
+  `message:send` passed a client-supplied `rideId` straight to
+  `Ride.findById`. A non-ObjectId string makes that throw a `CastError`, and
+  neither handler had a `catch`, so the rejection went unhandled — which
+  terminates the Node process. Handlers are now wrapped and the id is validated
+  first.
+- **The last seat could be sold twice.** `joinRide` checked capacity, then
+  saved. Two concurrent joins both passed the check and both saved, putting
+  three people on a bike. Joining is now one atomic conditional update whose
+  capacity guard lives in the query, and the `OPEN → LOCKED` flip happens in the
+  same round trip. `tests/integration/flow.test.js` fires three simultaneous
+  joins at a one-seat ride and asserts exactly one wins.
+- **Nobody could leave a ride.** The model's `LOCKED → OPEN` branch was
+  unreachable because no code path ever removed a member. Added
+  `POST /api/rides/:id/leave` (admins excluded — they cancel instead).
+- **A locked ride became unreachable.** Discovery only lists open rides with a
+  free seat, so once a ride filled, its own members could not find it again.
+  Added `GET /api/rides/mine`.
+- **The health check lied.** It returned `200 {"status":"ok"}` whenever the
+  process was up, even with Mongo unreachable, so a hosting platform would route
+  traffic to a broken instance. It now reports database state and returns 503
+  when disconnected.
+- **No graceful shutdown.** SIGTERM on every redeploy cut off in-flight
+  requests. `server.js` now drains connections and closes Mongo.
+
 ## 3. What is NOT real
 
-- **No end-to-end run against a database.** MongoDB is not installed in this
-  container and `fastdl.mongodb.org` is blocked by the same egress policy, so
-  signup → create ride → join → chat has **not** been executed. The code paths
-  are written and reviewed, not runtime-proven. Run it against a local `mongod`
-  or an Atlas cluster to confirm.
+- **Still no end-to-end run against a database.** MongoDB is not installed in
+  this container, and `fastdl.mongodb.org`, `downloads.mongodb.com` and
+  `repo.mongodb.org` are all refused by the organization's egress policy, so no
+  `mongod` could be obtained. Signup → create ride → join → chat has therefore
+  **not** been executed here.
+
+  What changed is that the gap is now measurable instead of merely stated: the
+  25 tests in `backend/tests/integration/` drive that exact flow over real HTTP
+  and report `SKIP no MongoDB at MONGO_URI` in this environment. Running
+  `MONGO_URI=... npm run test:integration` against any Mongo — a local `mongod`
+  or a free Atlas cluster — executes them for real. Until someone does that,
+  treat the database-dependent paths as reviewed and covered, not proven.
+
+  The 44 tests that need no database **do** pass here, and they are not trivial:
+  fare splitting, capacity derivation, GeoJSON coordinate-order validation, the
+  zod schemas (including the stripping of a client-supplied `maxCapacity`), JWT
+  forgery and expiry, and the whole Express stack — auth rejection, CORS
+  allow-listing, helmet headers, body-size limits, malformed JSON, and the error
+  response shape.
 - **No Uber / Ola / Rapido API integration.** `backend/src/services/booking.service.js`
   builds public deep links that pre-fill pickup and drop in the provider's own
   app or site. Nothing books, prices, or queries a provider. Rapido publishes no
@@ -68,7 +112,11 @@ Verified directly:
 - **No place autocomplete.** Ride creation takes coordinates directly (with a
   "use my current location" button for pickup). A maps/places provider would
   replace those number inputs.
-- **No tests.** No test framework was added.
+- **Deployment is documented but not performed.** `docs/DEPLOYMENT.md`,
+  `render.yaml` and `backend/Dockerfile` were written from the providers'
+  documented behaviour. No Render or Atlas account was created from here and no
+  deploy was run, so the walkthrough is unverified against the live dashboards,
+  which change their wording from time to time.
 
 ## 4. The visual layer is provisional
 

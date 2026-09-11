@@ -22,10 +22,14 @@ router.use(requireAuth);
 router.post('/', validate(createRideSchema), controller.createRide);
 router.get('/', validate(listRidesQuerySchema, 'query'), controller.listRides);
 
+// Must be declared before the '/:id' matcher below, or 'mine' is read as an id.
+router.get('/mine', controller.listMyRides);
+
 router.use('/:id', validate(objectIdSchema, 'params'), loadRide);
 
 router.get('/:id', controller.getRide);
 router.post('/:id/join', controller.joinRide);
+router.post('/:id/leave', controller.leaveRide);
 
 // Admin-only controls. A co-rider can never reach these.
 router.patch('/:id/cancel', requireRideAdmin, controller.cancelRide);

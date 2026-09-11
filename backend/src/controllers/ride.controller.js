@@ -29,12 +29,22 @@ const listRides = asyncHandler(async (req, res) => {
   res.json({ rides: rides.map((ride) => present(ride, req.user)) });
 });
 
+const listMyRides = asyncHandler(async (req, res) => {
+  const rides = await rideService.listMyRides(req.user);
+  res.json({ rides: rides.map((ride) => present(ride, req.user)) });
+});
+
 const getRide = asyncHandler(async (req, res) => {
   res.json({ ride: present(req.ride, req.user) });
 });
 
 const joinRide = asyncHandler(async (req, res) => {
   const ride = await rideService.joinRide(req.ride, req.user);
+  res.json({ ride: present(ride, req.user) });
+});
+
+const leaveRide = asyncHandler(async (req, res) => {
+  const ride = await rideService.leaveRide(req.ride, req.user);
   res.json({ ride: present(ride, req.user) });
 });
 
@@ -53,4 +63,14 @@ const setFare = asyncHandler(async (req, res) => {
   res.json({ ride: present(ride, req.user) });
 });
 
-module.exports = { createRide, listRides, getRide, joinRide, cancelRide, completeRide, setFare };
+module.exports = {
+  createRide,
+  listRides,
+  listMyRides,
+  getRide,
+  joinRide,
+  leaveRide,
+  cancelRide,
+  completeRide,
+  setFare,
+};

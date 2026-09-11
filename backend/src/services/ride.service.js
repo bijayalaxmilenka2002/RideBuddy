@@ -46,18 +46,104 @@ async function listRides({ status, vehicleType, lng, lat, radiusKm, limit }) {
   return rides.filter((ride) => ride.members.length < ride.maxCapacity);
 }
 
+/**
+ * Seat allocation is a single atomic conditional update, not read-then-write.
+ * Two riders tapping "join" at the same moment cannot both take the last seat:
+ * the capacity guard lives in the query, so the loser matches nothing. The
+ * pipeline's second stage sees the pushed member, which is what flips a filled
+ * ride to LOCKED in the same round trip.
+ */
+/** Every ride the caller is part of, newest departure first. Discovery hides
+ * full rides, so without this a user could not get back to their own locked
+ * pool. */
+async function listMyRides(user) {
+  return Ride.find({ members: user._id }).sort({ departureTime: -1 }).limit(50).populate(POPULATE);
+}
+
 async function joinRide(ride, user) {
+  // These pre-checks exist only to return a precise message. The update below
+  // is what actually enforces the rule.
   if (ride.status === RIDE_STATUS.CANCELLED) throw ApiError.conflict('This ride was cancelled');
   if (ride.status === RIDE_STATUS.COMPLETED) throw ApiError.conflict('This ride is already completed');
   if (ride.status === RIDE_STATUS.LOCKED) throw ApiError.conflict('This ride is full');
   if (ride.members.some((member) => isSameUser(member, user))) {
     throw ApiError.conflict('You have already joined this ride');
   }
-  if (ride.members.length >= ride.maxCapacity) throw ApiError.conflict('This ride is full');
 
-  ride.members.push(user._id);
-  await ride.save(); // pre-save hook flips OPEN -> LOCKED at capacity
-  return ride.populate(POPULATE);
+  const updated = await Ride.findOneAndUpdate(
+    {
+      _id: ride._id,
+      status: RIDE_STATUS.OPEN,
+      members: { $ne: user._id },
+      $expr: { $lt: [{ $size: '$members' }, '$maxCapacity'] },
+    },
+    [
+      { $set: { members: { $concatArrays: ['$members', [user._id]] } } },
+      {
+        $set: {
+          status: {
+            $cond: [
+              { $gte: [{ $size: '$members' }, '$maxCapacity'] },
+              RIDE_STATUS.LOCKED,
+              '$status',
+            ],
+          },
+        },
+      },
+    ],
+    { new: true }
+  ).populate(POPULATE);
+
+  // Nothing matched: someone else took the seat between the check and the write.
+  if (!updated) throw ApiError.conflict('This ride is full');
+  return updated;
+}
+
+/**
+ * A co-rider gives up their seat. The freed seat re-opens a LOCKED ride in the
+ * same atomic update. The admin cannot leave - the admin cancels instead, so a
+ * pool is never left without an owner.
+ */
+async function leaveRide(ride, user) {
+  if (isSameUser(ride.admin, user)) {
+    throw ApiError.conflict('The ride admin cannot leave; cancel the ride instead');
+  }
+  if (ride.status === RIDE_STATUS.COMPLETED) throw ApiError.conflict('This ride is already completed');
+  if (!ride.members.some((member) => isSameUser(member, user))) {
+    throw ApiError.conflict('You are not a member of this ride');
+  }
+
+  const updated = await Ride.findOneAndUpdate(
+    { _id: ride._id, members: user._id, status: { $in: [RIDE_STATUS.OPEN, RIDE_STATUS.LOCKED] } },
+    [
+      {
+        $set: {
+          members: {
+            $filter: {
+              input: '$members',
+              as: 'member',
+              cond: { $ne: ['$$member', user._id] },
+            },
+          },
+        },
+      },
+      {
+        $set: {
+          status: {
+            $cond: [
+              { $lt: [{ $size: '$members' }, '$maxCapacity'] },
+              RIDE_STATUS.OPEN,
+              '$status',
+            ],
+          },
+        },
+      },
+    ],
+    { new: true }
+  ).populate(POPULATE);
+
+  if (!updated) throw ApiError.conflict('You are not a member of this ride');
+  return updated;
 }
 
 async function cancelRide(ride) {
@@ -94,7 +180,9 @@ function fareBreakdown(ride) {
 module.exports = {
   createRide,
   listRides,
+  listMyRides,
   joinRide,
+  leaveRide,
   cancelRide,
   completeRide,
   setFare,

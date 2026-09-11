@@ -206,6 +206,22 @@ export default function RideDetail() {
               Join this ride
             </button>
           )}
+
+          {/* A co-rider can give up their seat; the admin cancels instead. */}
+          {ride.isMember && !ride.isAdmin && !closed && (
+            <button
+              type="button"
+              className="btn btn--ghost btn--block"
+              disabled={busy}
+              onClick={() => {
+                if (window.confirm('Leave this ride? Your seat is freed for someone else.')) {
+                  run(() => api.leaveRide(ride._id));
+                }
+              }}
+            >
+              Leave this ride
+            </button>
+          )}
         </aside>
       </div>
     </div>
