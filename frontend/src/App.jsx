@@ -5,6 +5,7 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Rides from './pages/Rides';
+import MyRides from './pages/MyRides';
 import CreateRide from './pages/CreateRide';
 import RideDetail from './pages/RideDetail';
 import NotFound from './pages/NotFound';
@@ -26,6 +27,7 @@ export default function App() {
           {/* The published Rocket site links here; keep those links working. */}
           <Route path="/sign-up-login-screen" element={<Navigate to="/signup" replace />} />
           <Route path="/rides" element={<ProtectedRoute><Rides /></ProtectedRoute>} />
+          <Route path="/rides/mine" element={<ProtectedRoute><MyRides /></ProtectedRoute>} />
           <Route path="/rides/new" element={<ProtectedRoute><CreateRide /></ProtectedRoute>} />
           <Route path="/rides/:id" element={<ProtectedRoute><RideDetail /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />

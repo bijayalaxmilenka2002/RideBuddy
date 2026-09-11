@@ -12,6 +12,8 @@ import './RideCard.css';
 export default function RideCard({ ride, onJoin, joining }) {
   const joinable = ride.status === 'OPEN' && ride.vacancies > 0 && !ride.isMember;
   const seatsLow = ride.vacancies === 1;
+  // Seat counts only mean something while a ride can still be joined.
+  const showVacancy = ride.status === 'OPEN' || ride.status === 'LOCKED';
 
   return (
     <article className="ride-card">
@@ -40,6 +42,7 @@ export default function RideCard({ ride, onJoin, joining }) {
           <Users size={13} />
           {pluralize(ride.members.length, 'passenger')} · {ride.admin?.name}
         </span>
+        {showVacancy && (
         <span
           className={`ride-card__vacancy${
             ride.vacancies === 0
@@ -53,6 +56,7 @@ export default function RideCard({ ride, onJoin, joining }) {
             ? `${pluralize(ride.vacancies, 'vacancy', 'vacancies')} left`
             : 'Full'}
         </span>
+        )}
       </div>
 
       <footer className="ride-card__actions">

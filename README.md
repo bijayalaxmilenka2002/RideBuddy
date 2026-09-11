@@ -22,21 +22,44 @@ docs/       Baseline notes and design reference
 
 ## Running locally
 
+### The quick way: one command
+
+```bash
+docker compose up
+```
+
+That starts MongoDB, the API and the web client together, then open
+<http://localhost:5173>. No MongoDB install, no Atlas account, no `.env` to
+fill in. The database persists in a Docker volume between runs.
+
+To fill it with demo commuters and ride pools:
+
+```bash
+docker compose exec api npm run seed
+```
+
+It prints the logins it created (all with the password `ridebuddy123`).
+
+### The manual way
+
 You need Node.js 18+ and a MongoDB instance (local `mongod` or a free Atlas
 cluster).
 
-### Backend
+#### Backend
 
 ```bash
 cd backend
 cp .env.example .env      # then fill in MONGO_URI and JWT_SECRET
 npm install
+npm run seed              # optional: demo users and rides
 npm run dev               # http://localhost:5000
 ```
 
-Check it is up: `curl http://localhost:5000/api/health`
+Check it is up: `curl http://localhost:5000/api/health` — it reports the
+database connection, not just the process, and returns 503 when Mongo is
+unreachable.
 
-### Frontend
+#### Frontend
 
 ```bash
 cd frontend
@@ -96,6 +119,20 @@ GET    /api/health                   liveness + database state (503 when Mongo i
 Socket.IO events (JWT in the handshake): `ride:join`, `ride:leave`,
 `message:send`, and the broadcast `message:new`. Membership is re-checked
 against the database on every join and every message.
+
+## How the client uses the API
+
+| Screen | Calls |
+| --- | --- |
+| `/` landing | none (public marketing page) |
+| `/signup`, `/login` | `POST /auth/signup`, `POST /auth/login` |
+| `/rides` discovery | `GET /rides`, plus `?lng=&lat=&radiusKm=` behind the **Near me** button, and `POST /rides/:id/join` |
+| `/rides/mine` | `GET /rides/mine` |
+| `/rides/new` | `POST /rides` |
+| `/rides/:id` | `GET /rides/:id`, `POST /rides/:id/leave`, the three admin `PATCH`es, `GET /rides/:id/messages`, and the Socket.IO chat events |
+
+Every authenticated request carries `Authorization: Bearer <token>`; the token
+is stored in `localStorage` and attached by `frontend/src/lib/api.js`.
 
 ## Design
 

@@ -83,7 +83,8 @@ export default function Navbar() {
 
           {user ? (
             <>
-              <NavLink to="/rides" className="navbar__link">Find a ride</NavLink>
+              <NavLink to="/rides" end className="navbar__link">Find a ride</NavLink>
+              <NavLink to="/rides/mine" className="navbar__link">My rides</NavLink>
               <NavLink to="/rides/new" className="navbar__link">Create ride</NavLink>
               <span className="navbar__user">{user.name}</span>
               <button type="button" className="btn btn--ghost" onClick={handleLogout}>

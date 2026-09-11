@@ -116,6 +116,14 @@ re-reviewed line by line. These were real defects, now fixed:
 - **No place autocomplete.** Ride creation takes coordinates directly (with a
   "use my current location" button for pickup). A maps/places provider would
   replace those number inputs.
+- **`docker compose up` is unverified.** The compose file's syntax is validated
+  (`docker compose config` passes) and a Docker daemon does run in this
+  container, but no image could be pulled: Docker Hub's blob CDN
+  (`production.cloudfront.docker.com`) answers 403 through the egress proxy,
+  for `mongo:7` and even `hello-world`. So the stack has never been started.
+  Together with the denials on `fastdl.mongodb.org`, `downloads.mongodb.com`,
+  `repo.mongodb.org` and the blocked apt PPAs, there is no route to a MongoDB
+  in this environment at all.
 - **Deployment is documented but not performed.** `docs/DEPLOYMENT.md`,
   `render.yaml` and `backend/Dockerfile` were written from the providers'
   documented behaviour. No Render or Atlas account was created from here and no

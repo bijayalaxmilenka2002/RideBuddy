@@ -292,3 +292,16 @@ h1, h2, h3 {
     scroll-behavior: auto !important;
   }
 }
+
+/* Discovery toolbar: wraps onto its own line on narrow screens. */
+.rides__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+@media (max-width: 560px) {
+  .rides__controls { width: 100%; }
+  .rides__controls > * { flex: 1 1 auto; }
+}
