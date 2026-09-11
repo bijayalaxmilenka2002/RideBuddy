@@ -119,3 +119,60 @@ dbTest('/rides/mine does not leak other people\'s rides', async () => {
   const { body } = await call('/api/rides/mine', { token: stranger.token });
   assert.equal(body.rides.length, 0);
 });
+
+dbTest('free-text search matches the pickup or the drop name', async () => {
+  const a = await makeUser('A');
+  const b = await makeUser('B');
+  await createRide(a.token, {
+    pickupLocation: { name: 'Koramangala 5th Block', coordinates: KORAMANGALA },
+    dropLocation: { name: 'Electronic City', coordinates: [77.6701, 12.8452] },
+  });
+  await createRide(b.token, {
+    pickupLocation: { name: 'Indiranagar Metro', coordinates: INDIRANAGAR },
+    dropLocation: { name: 'Airport', coordinates: [77.7064, 13.1986] },
+  });
+
+  const rider = await makeUser('Rider');
+  const byPickup = await call('/api/rides?q=koramangala', { token: rider.token });
+  assert.equal(byPickup.body.rides.length, 1);
+  assert.equal(byPickup.body.rides[0].pickupLocation.name, 'Koramangala 5th Block');
+
+  const byDrop = await call('/api/rides?q=airport', { token: rider.token });
+  assert.equal(byDrop.body.rides.length, 1);
+  assert.equal(byDrop.body.rides[0].dropLocation.name, 'Airport');
+
+  const none = await call('/api/rides?q=nowhere-at-all', { token: rider.token });
+  assert.equal(none.body.rides.length, 0);
+});
+
+dbTest('a search term with regex characters is treated as literal text', async () => {
+  const a = await makeUser('A');
+  await createRide(a.token, {
+    pickupLocation: { name: 'MG Road (Gate 2)', coordinates: KORAMANGALA },
+  });
+
+  const rider = await makeUser('Rider');
+  const literal = await call(`/api/rides?q=${encodeURIComponent('(Gate 2)')}`, { token: rider.token });
+  assert.equal(literal.body.rides.length, 1);
+
+  // Unescaped, this would match everything; escaped, it matches nothing.
+  const wildcard = await call(`/api/rides?q=${encodeURIComponent('.*')}`, { token: rider.token });
+  assert.equal(wildcard.body.rides.length, 0);
+});
+
+dbTest('the departure window filters the list', async () => {
+  const a = await makeUser('A');
+  const b = await makeUser('B');
+  const soon = new Date(Date.now() + 60 * 60_000);
+  const later = new Date(Date.now() + 48 * 60 * 60_000);
+  await createRide(a.token, { departureTime: soon.toISOString() });
+  await createRide(b.token, { departureTime: later.toISOString() });
+
+  const rider = await makeUser('Rider');
+  const within = new Date(Date.now() + 6 * 60 * 60_000).toISOString();
+  const near = await call(`/api/rides?to=${encodeURIComponent(within)}`, { token: rider.token });
+  assert.equal(near.body.rides.length, 1);
+
+  const all = await call('/api/rides', { token: rider.token });
+  assert.equal(all.body.rides.length, 2);
+});

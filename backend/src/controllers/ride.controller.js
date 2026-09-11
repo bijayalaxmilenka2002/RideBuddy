@@ -4,6 +4,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const rideService = require('../services/ride.service');
 const { buildBookingLinks } = require('../services/booking.service');
 const { isSameUser } = require('../middleware/rideAccess');
+const { findMyRequest } = require('../services/rideRequest.service');
 
 /**
  * Contact details are shared only inside a pool. Discovery and a ride page
@@ -54,7 +55,16 @@ const listMyRides = asyncHandler(async (req, res) => {
 });
 
 const getRide = asyncHandler(async (req, res) => {
-  res.json({ ride: present(req.ride, req.user) });
+  const ride = present(req.ride, req.user);
+  // The detail page needs to know whether the caller has already applied, so
+  // it can show "Request pending" rather than the request button again.
+  if (req.ride.approvalRequired && !ride.isMember) {
+    const mine = await findMyRequest(req.ride._id, req.user._id);
+    ride.myRequest = mine
+      ? { _id: mine._id, status: mine.status, message: mine.message, createdAt: mine.createdAt }
+      : null;
+  }
+  res.json({ ride });
 });
 
 const joinRide = asyncHandler(async (req, res) => {
@@ -86,6 +96,8 @@ module.exports = {
   // Exported for tests: this is the boundary that keeps contact details inside
   // a pool, so it is worth asserting directly.
   publicUser,
+  // Reused by the ride-request controller so both return the same ride shape.
+  presentRide: present,
   createRide,
   listRides,
   listMyRides,

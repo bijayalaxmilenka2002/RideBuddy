@@ -127,3 +127,6 @@
 
   .navbar__links.is-open .navbar__link:hover { color: var(--color-primary); }
 }
+
+/* The signed-in name doubles as the link to the profile. */
+.navbar__user-link { font-weight: 700; }

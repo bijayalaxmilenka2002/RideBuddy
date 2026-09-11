@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import StatusBadge from '../components/StatusBadge';
 import ChatPanel from '../components/ChatPanel';
+import RideRequests from '../components/RideRequests';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import { formatDateTime, formatFare, pluralize } from '../lib/format';
@@ -16,6 +17,7 @@ export default function RideDetail() {
   const [actionError, setActionError] = useState('');
   const [fareInput, setFareInput] = useState('');
   const [busy, setBusy] = useState(false);
+  const [requestNote, setRequestNote] = useState('');
 
   const [reloadKey, setReloadKey] = useState(0);
   const load = () => setReloadKey((key) => key + 1);
@@ -114,6 +116,10 @@ export default function RideDetail() {
             </ul>
           </section>
 
+          {ride.isAdmin && ride.approvalRequired && (
+            <RideRequests rideId={ride._id} onRideUpdated={setRide} />
+          )}
+
           {ride.isMember && <ChatPanel rideId={ride._id} />}
         </div>
 
@@ -210,7 +216,7 @@ export default function RideDetail() {
             </section>
           )}
 
-          {!ride.isMember && ride.status === 'OPEN' && ride.vacancies > 0 && (
+          {!ride.isMember && ride.status === 'OPEN' && ride.vacancies > 0 && !ride.approvalRequired && (
             <button
               type="button"
               className="btn btn--primary btn--block"
@@ -219,6 +225,84 @@ export default function RideDetail() {
             >
               Join this ride
             </button>
+          )}
+
+          {/* On a screened ride the rider applies and waits for the admin. */}
+          {!ride.isMember && ride.approvalRequired && ride.status === 'OPEN' && (
+            <section className="card">
+              <h2 className="ride-detail__heading">Ask to join</h2>
+
+              {ride.myRequest?.status === 'PENDING' ? (
+                <>
+                  <p className="notice">
+                    Your request is waiting for the admin to respond.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--block"
+                    disabled={busy}
+                    onClick={async () => {
+                      setBusy(true);
+                      setActionError('');
+                      try {
+                        await api.withdrawRequest(ride._id);
+                        load();
+                      } catch (err) {
+                        setActionError(err.message);
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  >
+                    Withdraw request
+                  </button>
+                </>
+              ) : (
+                <>
+                  {ride.myRequest?.status === 'REJECTED' && (
+                    <p className="field__hint" style={{ marginBottom: 'var(--space-3)' }}>
+                      The admin declined your last request. You can ask again.
+                    </p>
+                  )}
+                  <p className="field__hint" style={{ marginBottom: 'var(--space-3)' }}>
+                    This admin approves riders before they join.
+                  </p>
+                  <form
+                    onSubmit={async (event) => {
+                      event.preventDefault();
+                      setBusy(true);
+                      setActionError('');
+                      try {
+                        await api.requestToJoin(ride._id, requestNote.trim() || undefined);
+                        setRequestNote('');
+                        load();
+                      } catch (err) {
+                        setActionError(err.message);
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  >
+                    <div className="field">
+                      <label className="field__label" htmlFor="requestNote">
+                        Note for the admin (optional)
+                      </label>
+                      <input
+                        id="requestNote"
+                        className="field__input"
+                        value={requestNote}
+                        onChange={(event) => setRequestNote(event.target.value)}
+                        maxLength={300}
+                        placeholder="e.g. I'll be at the east gate"
+                      />
+                    </div>
+                    <button type="submit" className="btn btn--primary btn--block" disabled={busy}>
+                      {busy ? 'Sending…' : 'Request to join'}
+                    </button>
+                  </form>
+                </>
+              )}
+            </section>
           )}
 
           {/* A co-rider can give up their seat; the admin cancels instead. */}

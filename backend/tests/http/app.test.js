@@ -124,6 +124,15 @@ test('every ride route requires authentication, and only the public ones do not'
     ['PATCH', '/api/rides/507f1f77bcf86cd799439011/complete'],
     ['PATCH', '/api/rides/507f1f77bcf86cd799439011/fare'],
     ['GET', '/api/rides/507f1f77bcf86cd799439011/messages'],
+    ['GET', '/api/users/me'],
+    ['PATCH', '/api/users/me'],
+    ['PATCH', '/api/users/me/password'],
+    ['GET', '/api/rides/requests/mine'],
+    ['POST', '/api/rides/507f1f77bcf86cd799439011/requests'],
+    ['GET', '/api/rides/507f1f77bcf86cd799439011/requests'],
+    ['PATCH', '/api/rides/507f1f77bcf86cd799439011/requests/507f1f77bcf86cd799439012/accept'],
+    ['PATCH', '/api/rides/507f1f77bcf86cd799439011/requests/507f1f77bcf86cd799439012/reject'],
+    ['PATCH', '/api/rides/507f1f77bcf86cd799439011/requests/mine/withdraw'],
   ];
 
   for (const [method, path] of PROTECTED) {

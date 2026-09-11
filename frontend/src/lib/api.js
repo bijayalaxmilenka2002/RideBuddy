@@ -34,6 +34,11 @@ export const api = {
   login: (data) => request('/auth/login', { method: 'POST', body: data, auth: false }),
   me: () => request('/auth/me'),
 
+  // Profile
+  getProfile: () => request('/users/me'),
+  updateProfile: (data) => request('/users/me', { method: 'PATCH', body: data }),
+  changePassword: (data) => request('/users/me/password', { method: 'PATCH', body: data }),
+
   listRides: (params = {}) => {
     const query = new URLSearchParams(
       Object.entries(params).filter(([, value]) => value !== '' && value !== undefined)
@@ -49,4 +54,16 @@ export const api = {
   completeRide: (id) => request(`/rides/${id}/complete`, { method: 'PATCH' }),
   setFare: (id, totalFare) => request(`/rides/${id}/fare`, { method: 'PATCH', body: { totalFare } }),
   listMessages: (id) => request(`/rides/${id}/messages`),
+
+  // Join requests, used by rides whose admin screens riders.
+  requestToJoin: (id, message) =>
+    request(`/rides/${id}/requests`, { method: 'POST', body: { message } }),
+  listRideRequests: (id, status) =>
+    request(`/rides/${id}/requests${status ? `?status=${status}` : ''}`),
+  listMyRequests: () => request('/rides/requests/mine'),
+  acceptRequest: (id, requestId) =>
+    request(`/rides/${id}/requests/${requestId}/accept`, { method: 'PATCH' }),
+  rejectRequest: (id, requestId) =>
+    request(`/rides/${id}/requests/${requestId}/reject`, { method: 'PATCH' }),
+  withdrawRequest: (id) => request(`/rides/${id}/requests/mine/withdraw`, { method: 'PATCH' }),
 };

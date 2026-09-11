@@ -38,6 +38,11 @@ const rideSchema = new mongoose.Schema(
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     status: { type: String, enum: Object.values(RIDE_STATUS), default: RIDE_STATUS.OPEN, index: true },
     totalFare: { type: Number, default: null, min: 0 },
+    /**
+     * When true, joining is an application the admin accepts or rejects rather
+     * than an instant seat grab. The admin chooses this at creation time.
+     */
+    approvalRequired: { type: Boolean, default: false },
   },
   { timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } }
 );

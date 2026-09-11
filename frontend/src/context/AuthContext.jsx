@@ -33,14 +33,21 @@ export function AuthProvider({ children }) {
     [persist]
   );
 
+  /** Re-reads the account after a profile edit, so the UI shows the new name. */
+  const refreshUser = useCallback(async () => {
+    const { user: current } = await api.me();
+    setUser(current);
+    return current;
+  }, []);
+
   const logout = useCallback(() => {
     clearToken();
     setUser(null);
   }, []);
 
   const value = useMemo(
-    () => ({ user, loading, login, signup, logout }),
-    [user, loading, login, signup, logout]
+    () => ({ user, loading, login, signup, logout, refreshUser }),
+    [user, loading, login, signup, logout, refreshUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

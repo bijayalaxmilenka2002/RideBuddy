@@ -24,6 +24,23 @@ const RIDE_STATUS = Object.freeze({
   CANCELLED: 'CANCELLED',
 });
 
+/**
+ * Lifecycle of a request to join a ride that the admin screens.
+ * WITHDRAWN is the rider backing out; REJECTED is the admin declining.
+ */
+const REQUEST_STATUS = Object.freeze({
+  PENDING: 'PENDING',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED',
+  WITHDRAWN: 'WITHDRAWN',
+});
+
 const capacityFor = (vehicleType) => VEHICLE_CAPACITY[vehicleType];
 
-module.exports = { VEHICLE_TYPES, VEHICLE_CAPACITY, RIDE_STATUS, capacityFor };
+module.exports = {
+  VEHICLE_TYPES,
+  VEHICLE_CAPACITY,
+  RIDE_STATUS,
+  REQUEST_STATUS,
+  capacityFor,
+};

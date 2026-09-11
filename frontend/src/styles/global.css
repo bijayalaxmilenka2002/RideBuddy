@@ -273,6 +273,16 @@ h1, h2, h3 {
   border: 1px solid #fca5a5;
 }
 
+.notice {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-4);
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  border: 1px solid rgba(5, 150, 105, 0.25);
+}
+
 .grid {
   display: grid;
   gap: var(--space-4);
@@ -318,3 +328,11 @@ h1, h2, h3 {
   .rides__controls { width: 100%; }
   .rides__controls > * { flex: 1 1 auto; }
 }
+
+/* A link styled as a button cannot use :disabled, so it needs its own class. */
+.btn--disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.rides__search { flex: 2 1 14rem; }

@@ -19,11 +19,18 @@ const createRideSchema = z.object({
   departureTime: z.coerce.date().refine((d) => d.getTime() > Date.now(), {
     message: 'departureTime must be in the future',
   }),
+  // Opt in to screening riders instead of letting them take a seat directly.
+  approvalRequired: z.boolean().optional().default(false),
 });
 
 const listRidesQuerySchema = z.object({
   status: z.nativeEnum(RIDE_STATUS).optional(),
   vehicleType: z.nativeEnum(VEHICLE_TYPES).optional(),
+  // Free-text match against the pickup and drop names.
+  q: z.string().trim().min(1).max(120).optional(),
+  // Departure window, both ends optional.
+  from: z.coerce.date().optional(),
+  to: z.coerce.date().optional(),
   // Optional "near me" filter, in GeoJSON order.
   lng: z.coerce.number().min(-180).max(180).optional(),
   lat: z.coerce.number().min(-90).max(90).optional(),

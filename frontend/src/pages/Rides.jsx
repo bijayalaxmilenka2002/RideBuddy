@@ -19,6 +19,16 @@ export default function Rides() {
   const [near, setNear] = useState(null);
   const [radiusKm, setRadiusKm] = useState(10);
   const [locating, setLocating] = useState(false);
+  // What is typed, and the debounced value actually sent to the API.
+  const [searchInput, setSearchInput] = useState('');
+  const [q, setQ] = useState('');
+  const [before, setBefore] = useState('');
+
+  // Wait for a pause in typing rather than querying on every keystroke.
+  useEffect(() => {
+    const timer = setTimeout(() => setQ(searchInput.trim()), 350);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   // Bumped to force a refetch (the retry button, or after a failed join).
   const [reloadKey, setReloadKey] = useState(0);
@@ -34,6 +44,9 @@ export default function Rides() {
     api
       .listRides({
         vehicleType,
+        ...(q ? { q } : {}),
+        // datetime-local gives a local time; the API parses it as a date.
+        ...(before ? { to: new Date(before).toISOString() } : {}),
         // The API takes GeoJSON order and does the distance search server-side.
         ...(near ? { lng: near.lng, lat: near.lat, radiusKm } : {}),
       })
@@ -51,7 +64,7 @@ export default function Rides() {
     return () => {
       cancelled = true;
     };
-  }, [vehicleType, near, radiusKm, reloadKey]);
+  }, [vehicleType, q, before, near, radiusKm, reloadKey]);
 
   const findNearMe = () => {
     if (!navigator.geolocation) {
@@ -93,6 +106,24 @@ export default function Rides() {
           <p className="page__subtitle">Join an open pool, or start your own.</p>
         </div>
         <div className="rides__controls">
+          <input
+            type="search"
+            className="field__input rides__search"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder="Search pickup or destination…"
+            aria-label="Search by place"
+          />
+
+          <input
+            type="datetime-local"
+            className="field__input"
+            value={before}
+            onChange={(event) => setBefore(event.target.value)}
+            aria-label="Departing before"
+            title="Departing before"
+          />
+
           <select
             className="field__select"
             value={vehicleType}
@@ -146,10 +177,16 @@ export default function Rides() {
           {error && <p className="alert">{error}</p>}
           {rides.length === 0 ? (
             <EmptyState
-              title={near ? `No open rides within ${radiusKm} km` : 'No open rides right now'}
-              description={
+              title={
                 near
-                  ? 'Try a wider radius, or create a ride and let others join you.'
+                  ? `No open rides within ${radiusKm} km`
+                  : q || before
+                    ? 'No rides match that search'
+                    : 'No open rides right now'
+              }
+              description={
+                near || q || before
+                  ? 'Try a wider radius, a different place, or a later time.'
                   : 'Nobody is pooling on this route yet. Create a ride and let others join you.'
               }
               action={<Link to="/rides/new" className="btn btn--primary">Create a ride</Link>}

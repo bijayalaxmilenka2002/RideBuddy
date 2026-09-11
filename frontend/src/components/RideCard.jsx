@@ -19,7 +19,14 @@ export default function RideCard({ ride, onJoin, joining }) {
     <article className="ride-card">
       <header className="ride-card__top">
         <span className="badge badge--vehicle">{ride.vehicleType}</span>
-        <StatusBadge status={ride.status} />
+        <span className="ride-card__flags">
+          {ride.approvalRequired && (
+            <span className="badge" title="The admin approves riders before they join">
+              APPROVAL
+            </span>
+          )}
+          <StatusBadge status={ride.status} />
+        </span>
       </header>
 
       <div className="ride-card__route">
@@ -68,7 +75,18 @@ export default function RideCard({ ride, onJoin, joining }) {
         <Link to={`/rides/${ride._id}`} className="btn btn--secondary">
           View details
         </Link>
-        {!ride.isMember && (
+        {/* A screened ride is applied for on its detail page, where the rider
+            can add a note for the admin. */}
+        {!ride.isMember && ride.approvalRequired && (
+          <Link
+            to={`/rides/${ride._id}`}
+            className={`btn btn--primary${joinable ? '' : ' btn--disabled'}`}
+          >
+            Request to join
+          </Link>
+        )}
+
+        {!ride.isMember && !ride.approvalRequired && (
           <button
             type="button"
             className="btn btn--primary"

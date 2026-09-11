@@ -21,6 +21,8 @@ const EMPTY = {
   dropLng: '',
   dropLat: '',
   departureTime: '',
+  // When true, riders apply and the admin accepts or rejects them.
+  approvalRequired: false,
 };
 
 /** Creating a ride makes you its admin, and takes the first seat. */
@@ -66,6 +68,7 @@ export default function CreateRide() {
           coordinates: [Number(form.dropLng), Number(form.dropLat)],
         },
         departureTime: new Date(form.departureTime).toISOString(),
+        approvalRequired: form.approvalRequired,
       });
       navigate(`/rides/${ride._id}`);
     } catch (err) {
@@ -140,6 +143,26 @@ export default function CreateRide() {
             required
           />
           <span className="field__hint">Must be in the future.</span>
+        </div>
+
+        <div className="field create-ride__toggle">
+          <label className="create-ride__check" htmlFor="approvalRequired">
+            <input
+              id="approvalRequired"
+              type="checkbox"
+              checked={form.approvalRequired}
+              onChange={(event) =>
+                setForm({ ...form, approvalRequired: event.target.checked })
+              }
+            />
+            <span>
+              <span className="field__label">Approve riders before they join</span>
+              <span className="field__hint">
+                Riders send a request with a short note, and you accept or reject each one.
+                Leave this off to let anyone take a free seat instantly.
+              </span>
+            </span>
+          </label>
         </div>
 
         <button type="submit" className="btn btn--primary btn--block" disabled={submitting}>

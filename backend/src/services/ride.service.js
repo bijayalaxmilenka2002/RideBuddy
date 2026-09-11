@@ -25,12 +25,21 @@ async function createRide(payload, adminUser) {
  * Ride discovery. Only OPEN rides with a free seat and a future departure
  * are listed; optionally restricted to a radius around a pickup point.
  */
-async function listRides({ status, vehicleType, lng, lat, radiusKm, limit }) {
+async function listRides({ status, vehicleType, q, from, to, lng, lat, radiusKm, limit }) {
+  // Never earlier than now: a departed ride is not joinable.
+  const earliest = from && from > new Date() ? from : new Date();
   const query = {
     status: status || RIDE_STATUS.OPEN,
-    departureTime: { $gte: new Date() },
+    departureTime: to ? { $gte: earliest, $lte: to } : { $gte: earliest },
   };
   if (vehicleType) query.vehicleType = vehicleType;
+
+  if (q) {
+    // Escaped, so a user searching for "5th Block (A)" cannot inject regex
+    // syntax or a catastrophic backtracking pattern.
+    const safe = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    query.$or = [{ 'pickupLocation.name': safe }, { 'dropLocation.name': safe }];
+  }
 
   if (lng !== undefined && lat !== undefined) {
     query.pickupLocation = {
@@ -44,6 +53,43 @@ async function listRides({ status, vehicleType, lng, lat, radiusKm, limit }) {
   const rides = await Ride.find(query).limit(limit).populate(POPULATE);
   // A LOCKED ride is already excluded by status, but stay defensive.
   return rides.filter((ride) => ride.members.length < ride.maxCapacity);
+}
+
+/**
+ * Adds one rider to a ride in a single conditional update, or returns null if
+ * the ride is no longer OPEN, already has them, or has no seat left.
+ *
+ * This is the only place a seat is granted - both the instant join and the
+ * admin accepting a request go through it - so the capacity rule cannot drift
+ * between the two paths. The guard lives in the query, so two concurrent
+ * callers cannot both take the last seat; the pipeline's second stage sees the
+ * pushed member, which is what flips a filled ride to LOCKED in the same round
+ * trip.
+ */
+async function addMemberAtomically(rideId, userId) {
+  return Ride.findOneAndUpdate(
+    {
+      _id: rideId,
+      status: RIDE_STATUS.OPEN,
+      members: { $ne: userId },
+      $expr: { $lt: [{ $size: '$members' }, '$maxCapacity'] },
+    },
+    [
+      { $set: { members: { $concatArrays: ['$members', [userId]] } } },
+      {
+        $set: {
+          status: {
+            $cond: [
+              { $gte: [{ $size: '$members' }, '$maxCapacity'] },
+              RIDE_STATUS.LOCKED,
+              '$status',
+            ],
+          },
+        },
+      },
+    ],
+    { new: true }
+  ).populate(POPULATE);
 }
 
 /**
@@ -66,6 +112,9 @@ async function joinRide(ride, user) {
   if (ride.status === RIDE_STATUS.CANCELLED) throw ApiError.conflict('This ride was cancelled');
   if (ride.status === RIDE_STATUS.COMPLETED) throw ApiError.conflict('This ride is already completed');
   if (ride.status === RIDE_STATUS.LOCKED) throw ApiError.conflict('This ride is full');
+  if (ride.approvalRequired) {
+    throw ApiError.conflict('This ride admin screens riders - send a join request instead');
+  }
   // Discovery hides departed rides, but the id is guessable from a shared link.
   if (new Date(ride.departureTime).getTime() <= Date.now()) {
     throw ApiError.conflict('This ride has already departed');
@@ -74,29 +123,7 @@ async function joinRide(ride, user) {
     throw ApiError.conflict('You have already joined this ride');
   }
 
-  const updated = await Ride.findOneAndUpdate(
-    {
-      _id: ride._id,
-      status: RIDE_STATUS.OPEN,
-      members: { $ne: user._id },
-      $expr: { $lt: [{ $size: '$members' }, '$maxCapacity'] },
-    },
-    [
-      { $set: { members: { $concatArrays: ['$members', [user._id]] } } },
-      {
-        $set: {
-          status: {
-            $cond: [
-              { $gte: [{ $size: '$members' }, '$maxCapacity'] },
-              RIDE_STATUS.LOCKED,
-              '$status',
-            ],
-          },
-        },
-      },
-    ],
-    { new: true }
-  ).populate(POPULATE);
+  const updated = await addMemberAtomically(ride._id, user._id);
 
   // Nothing matched: someone else took the seat between the check and the write.
   if (!updated) throw ApiError.conflict('This ride is full');
@@ -182,6 +209,7 @@ function fareBreakdown(ride) {
 }
 
 module.exports = {
+  addMemberAtomically,
   createRide,
   listRides,
   listMyRides,

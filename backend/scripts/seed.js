@@ -14,6 +14,7 @@ const env = require('../src/config/env');
 const User = require('../src/models/User');
 const Ride = require('../src/models/Ride');
 const Message = require('../src/models/Message');
+const RideRequest = require('../src/models/RideRequest');
 
 const PASSWORD = 'ridebuddy123';
 
@@ -58,6 +59,17 @@ const RIDES = [
     drop: { name: 'Indiranagar Metro', coordinates: [77.6408, 12.9784] },
     inMinutes: 30,
   },
+  {
+    // This one screens its riders, so log in as Sanjay to see the request
+    // queue and as Arjun to see a pending request.
+    admin: 2,
+    riders: [],
+    vehicleType: 'CAB',
+    approvalRequired: true,
+    pickup: { name: 'Pune Railway Station', coordinates: [73.8743, 18.5286] },
+    drop: { name: 'Magarpatta City', coordinates: [73.9297, 18.5158] },
+    inMinutes: 180,
+  },
 ];
 
 async function seed() {
@@ -68,8 +80,13 @@ async function seed() {
   await mongoose.connect(env.mongoUri);
   console.log(`Connected to ${mongoose.connection.name}`);
 
-  await Promise.all([User.deleteMany({}), Ride.deleteMany({}), Message.deleteMany({})]);
-  console.log('Cleared existing users, rides and messages');
+  await Promise.all([
+    User.deleteMany({}),
+    Ride.deleteMany({}),
+    Message.deleteMany({}),
+    RideRequest.deleteMany({}),
+  ]);
+  console.log('Cleared existing users, rides, messages and requests');
 
   // create() runs the pre-save hook, so passwords are hashed like any signup.
   const users = await User.create(PEOPLE.map((person) => ({ ...person, password: PASSWORD })));
@@ -84,9 +101,22 @@ async function seed() {
       pickupLocation: { ...ride.pickup, type: 'Point' },
       dropLocation: { ...ride.drop, type: 'Point' },
       departureTime: new Date(Date.now() + ride.inMinutes * 60_000),
+      approvalRequired: Boolean(ride.approvalRequired),
     }))
   );
   console.log(`Created ${rides.length} ride pools`);
+
+  // One rider waiting on the screened ride, so the admin has something to
+  // accept or reject the first time they open it.
+  const screened = rides.find((ride) => ride.approvalRequired);
+  if (screened) {
+    await RideRequest.create({
+      ride: screened._id,
+      rider: users[3]._id,
+      message: 'I work in Magarpatta too - happy to split the fare.',
+    });
+    console.log('Created 1 pending join request');
+  }
 
   await Message.create([
     {

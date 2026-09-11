@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
+import { formatDateTime } from '../lib/format';
 import RideCard from '../components/RideCard';
 import Loader from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import EmptyState from '../components/EmptyState';
+import './MyRides.css';
 
 const ACTIVE = ['OPEN', 'LOCKED'];
 
@@ -18,16 +20,18 @@ export default function MyRides() {
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState('');
 
+  const [requests, setRequests] = useState([]);
   const [reloadKey, setReloadKey] = useState(0);
   const load = () => setReloadKey((key) => key + 1);
 
   useEffect(() => {
     let cancelled = false;
-    api
-      .listMyRides()
-      .then(({ rides: results }) => {
+    // Both lists make up "my rides", so fetch them together and fail together.
+    Promise.all([api.listMyRides(), api.listMyRequests()])
+      .then(([{ rides: results }, { requests: rows }]) => {
         if (cancelled) return;
         setRides(results);
+        setRequests(rows);
         setStatus('ready');
       })
       .catch((err) => {
@@ -42,6 +46,9 @@ export default function MyRides() {
 
   const active = rides.filter((ride) => ACTIVE.includes(ride.status));
   const past = rides.filter((ride) => !ACTIVE.includes(ride.status));
+  // A request only matters until it is answered or the rider is on board.
+  const openRequests = requests.filter((request) => request.status === 'PENDING');
+  const closedRequests = requests.filter((request) => request.status !== 'PENDING');
 
   return (
     <div className="container page">
@@ -56,8 +63,38 @@ export default function MyRides() {
       {status === 'error' && <ErrorState message={error} onRetry={load} />}
       {status === 'loading' && <Loader label="Loading your rides…" />}
 
+      {status === 'ready' && requests.length > 0 && (
+        <section className="card myrides__requests">
+          <h2 className="myrides__heading">
+            Your join requests
+            {openRequests.length > 0 && (
+              <span className="myrides__count">{openRequests.length} waiting</span>
+            )}
+          </h2>
+          <ul className="myrides__request-list">
+            {[...openRequests, ...closedRequests].map((request) => (
+              <li key={request._id} className="myrides__request">
+                <div className="myrides__request-route">
+                  <Link to={`/rides/${request.ride?._id}`} className="myrides__request-link">
+                    {request.ride?.pickupLocation?.name} → {request.ride?.dropLocation?.name}
+                  </Link>
+                  {request.ride?.departureTime && (
+                    <span className="myrides__request-time">
+                      Departs {formatDateTime(request.ride.departureTime)}
+                    </span>
+                  )}
+                </div>
+                <span className={`badge badge--${request.status.toLowerCase()}`}>
+                  {request.status}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {status === 'ready' &&
-        (rides.length === 0 ? (
+        (rides.length === 0 && requests.length === 0 ? (
           <EmptyState
             title="You are not in any ride pool yet"
             description="Join an open pool, or create one and let others join you."
