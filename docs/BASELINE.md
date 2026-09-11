@@ -116,6 +116,15 @@ re-reviewed line by line. These were real defects, now fixed:
 - **No place autocomplete.** Ride creation takes coordinates directly (with a
   "use my current location" button for pickup). A maps/places provider would
   replace those number inputs.
+- **The application has never been run against a database from here.** Every
+  check that does not need one has been run and passes: the frontend production
+  build, ESLint (clean), 58 backend tests, all 8 routes rendered in Chromium at
+  1280 / 820 / 390 px with no console errors, no page errors and no horizontal
+  overflow, a client-to-route contract cross-check, an import resolution check,
+  an environment-variable coverage check, and both startup failure modes. What
+  remains unverified is anything that needs a live MongoDB: signup, login,
+  creating and joining a ride, the geospatial search actually returning rows,
+  fare splitting end to end, and the Socket.IO chat delivering a message.
 - **`docker compose up` is unverified.** The compose file's syntax is validated
   (`docker compose config` passes) and a Docker daemon does run in this
   container, but no image could be pulled: Docker Hub's blob CDN

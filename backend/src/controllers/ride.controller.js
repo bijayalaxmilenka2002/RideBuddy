@@ -5,15 +5,34 @@ const rideService = require('../services/ride.service');
 const { buildBookingLinks } = require('../services/booking.service');
 const { isSameUser } = require('../middleware/rideAccess');
 
+/**
+ * Contact details are shared only inside a pool. Discovery and a ride page
+ * viewed by a non-member expose names alone - otherwise anyone with an account
+ * could list every ride and harvest the phone number and email of everyone on
+ * the platform.
+ */
+const publicUser = (person, includeContact) => {
+  // Guard against an unpopulated ObjectId reference.
+  if (!person || !person.name) return person;
+  const base = { _id: person._id, name: person.name };
+  return includeContact ? { ...base, email: person.email, phone: person.phone } : base;
+};
+
 /** Adds the caller's perspective so the UI knows which controls to show. */
 const present = (ride, user) => {
   const json = ride.toJSON();
   const isAdmin = user ? isSameUser(ride.admin, user) : false;
+  const isMember = user ? ride.members.some((member) => isSameUser(member, user)) : false;
+
   return {
     ...json,
+    admin: publicUser(json.admin, isMember),
+    members: Array.isArray(json.members)
+      ? json.members.map((member) => publicUser(member, isMember))
+      : json.members,
     fare: rideService.fareBreakdown(ride),
     isAdmin,
-    isMember: user ? ride.members.some((member) => isSameUser(member, user)) : false,
+    isMember,
     // Booking hand-off is an admin-only control; omit it for everyone else.
     bookingLinks: isAdmin ? buildBookingLinks(ride) : undefined,
   };
@@ -64,6 +83,9 @@ const setFare = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  // Exported for tests: this is the boundary that keeps contact details inside
+  // a pool, so it is worth asserting directly.
+  publicUser,
   createRide,
   listRides,
   listMyRides,

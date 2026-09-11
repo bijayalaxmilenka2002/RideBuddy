@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Crosshair, X } from 'lucide-react';
 import { api } from '../lib/api';
@@ -20,21 +20,38 @@ export default function Rides() {
   const [radiusKm, setRadiusKm] = useState(10);
   const [locating, setLocating] = useState(false);
 
-  const load = useCallback(async () => {
-    setStatus('loading');
-    try {
-      const { rides: results } = await api.listRides({
+  // Bumped to force a refetch (the retry button, or after a failed join).
+  const [reloadKey, setReloadKey] = useState(0);
+  const load = () => setReloadKey((key) => key + 1);
+
+  /**
+   * State is only touched in the promise callbacks, and a superseded request
+   * is ignored - otherwise switching the filter quickly can let a slow earlier
+   * response overwrite the newer results.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .listRides({
         vehicleType,
         // The API takes GeoJSON order and does the distance search server-side.
         ...(near ? { lng: near.lng, lat: near.lat, radiusKm } : {}),
+      })
+      .then(({ rides: results }) => {
+        if (cancelled) return;
+        setRides(results);
+        setError('');
+        setStatus('ready');
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err.message);
+        setStatus('error');
       });
-      setRides(results);
-      setStatus('ready');
-    } catch (err) {
-      setError(err.message);
-      setStatus('error');
-    }
-  }, [vehicleType, near, radiusKm]);
+    return () => {
+      cancelled = true;
+    };
+  }, [vehicleType, near, radiusKm, reloadKey]);
 
   const findNearMe = () => {
     if (!navigator.geolocation) {
@@ -53,10 +70,6 @@ export default function Rides() {
       }
     );
   };
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   const handleJoin = async (ride) => {
     setJoiningId(ride._id);

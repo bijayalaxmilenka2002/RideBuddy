@@ -17,7 +17,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolled, setScrolled] = useState(() => window.scrollY > 24);
 
   const onLanding = pathname === '/';
 
@@ -29,13 +29,15 @@ export default function Navbar() {
   useEffect(() => {
     if (!onLanding) return undefined;
     const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
+    // Re-read after paint rather than synchronously, so arriving on the
+    // landing page from a scrolled page still starts in the right state.
+    const frame = requestAnimationFrame(onScroll);
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', onScroll);
+    };
   }, [onLanding]);
-
-  // Close the mobile menu whenever the route changes.
-  useEffect(() => setOpen(false), [pathname]);
 
   const handleLogout = () => {
     logout();
@@ -73,7 +75,10 @@ export default function Navbar() {
           {open ? <X size={20} /> : <Menu size={20} />}
         </button>
 
-        <nav className={`navbar__links${open ? ' is-open' : ''}`}>
+        <nav
+          className={`navbar__links${open ? ' is-open' : ''}`}
+          onClick={() => setOpen(false)}
+        >
           {onLanding &&
             SECTIONS.map(([href, label]) => (
               <a key={href} href={href} className="navbar__link navbar__link--section">

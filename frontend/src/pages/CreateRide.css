@@ -1,0 +1,17 @@
+.create-ride__form { max-width: 640px; }
+
+.create-ride__group {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  /* A fieldset defaults to min-width:min-content, which stops its flex rows
+     from shrinking on a narrow screen. */
+  min-width: 0;
+}
+
+.create-ride__group--spaced { margin-top: var(--space-4); }
+
+.create-ride__legend { margin-bottom: var(--space-3); }
+
+/* Keep the fare/coordinate inputs from forcing the card wider than the page. */
+.create-ride__form .field__input { width: 100%; }

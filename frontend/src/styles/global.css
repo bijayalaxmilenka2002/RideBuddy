@@ -222,6 +222,10 @@ h1, h2, h3 {
 
 .field__input,
 .field__select {
+  /* A flex child will not shrink below its intrinsic input width without
+     this, which is what pushed the coordinate rows off screen on a phone. */
+  min-width: 0;
+  max-width: 100%;
   padding: 0.7rem var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -239,6 +243,15 @@ h1, h2, h3 {
 }
 
 .field__hint { font-size: var(--text-xs); color: var(--color-text-muted); }
+
+/* A row of inputs that collapses to one column when there is no room. */
+.field--row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.field--row > * { flex: 1 1 9rem; }
 
 /* Status blocks ---------------------------------------------------------- */
 .state {

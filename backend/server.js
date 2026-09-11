@@ -2,10 +2,38 @@
 
 const http = require('http');
 const mongoose = require('mongoose');
-const app = require('./src/app');
-const env = require('./src/config/env');
-const { connectDatabase } = require('./src/config/db');
-const { initSockets } = require('./src/sockets');
+
+/**
+ * Configuration is read when these modules load, so a missing variable throws
+ * here. Catching it turns a stack trace into instructions.
+ */
+let app;
+let env;
+let connectDatabase;
+let initSockets;
+
+try {
+  app = require('./src/app');
+  env = require('./src/config/env');
+  ({ connectDatabase } = require('./src/config/db'));
+  ({ initSockets } = require('./src/sockets'));
+} catch (error) {
+  if (error.code === 'ENV_MISSING') {
+    console.error(`\nRideBuddy API cannot start: ${error.missing.join(', ')} is not set.\n`);
+    console.error('Set it in backend/.env (copy backend/.env.example to get started):\n');
+    if (error.missing.includes('MONGO_URI')) {
+      console.error('  MONGO_URI=mongodb://127.0.0.1:27017/ridebuddy');
+    }
+    if (error.missing.includes('JWT_SECRET')) {
+      console.error('  JWT_SECRET=<a long random string>');
+      console.error('  Generate one with:');
+      console.error('    node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'hex\'))"');
+    }
+    console.error('\nOr run the whole stack with:  docker compose up\n');
+    process.exit(1);
+  }
+  throw error;
+}
 
 let server;
 
@@ -53,6 +81,10 @@ process.on('unhandledRejection', (reason) => {
 });
 
 start().catch((error) => {
-  console.error('Failed to start server:', error.message);
+  console.error('\nFailed to start server:', error.message);
+  if (/ECONNREFUSED|ENOTFOUND|ServerSelection/i.test(error.message)) {
+    console.error('The API could not reach MongoDB. Check MONGO_URI, and that MongoDB is running.');
+    console.error('The easiest way to get one:  docker compose up\n');
+  }
   process.exit(1);
 });

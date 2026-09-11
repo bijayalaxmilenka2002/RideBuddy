@@ -10,6 +10,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
+  /* Grid and flex children default to min-width:auto, which lets wide content
+     (a long place name, the chat) push the column past the viewport. */
+  min-width: 0;
 }
 
 .ride-detail__heading {
@@ -84,5 +87,22 @@
 }
 
 @media (max-width: 900px) {
-  .ride-detail__layout { grid-template-columns: 1fr; }
+  /* minmax(0, 1fr), not 1fr: a bare 1fr track still refuses to shrink below
+     its content's min-content width. */
+  .ride-detail__layout { grid-template-columns: minmax(0, 1fr); }
 }
+
+.ride-detail__member {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ride-detail__contact {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-primary);
+}
+
+.ride-detail__contact:hover { text-decoration: underline; }

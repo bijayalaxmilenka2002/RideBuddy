@@ -1,6 +1,10 @@
 node_modules/
 dist/
+
+# Every local env file stays out of git; only the examples are committed.
 .env
-.env.local
+.env.*
+!.env.example
+
 *.log
 .DS_Store

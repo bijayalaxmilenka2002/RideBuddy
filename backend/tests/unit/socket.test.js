@@ -96,3 +96,14 @@ test('ride:leave ignores a malformed id', () => {
   socket.handlers['ride:leave']('507f1f77bcf86cd799439011');
   assert.deepEqual(socket.left, ['ride:507f1f77bcf86cd799439011']);
 });
+
+test('the message budget allows a burst and then throttles', () => {
+  const { createMessageBudget } = require('../../src/sockets/chat.socket');
+  const take = createMessageBudget();
+
+  // Ten messages back to back are fine; the eleventh is refused.
+  for (let i = 0; i < 10; i += 1) {
+    assert.equal(take(), true, `message ${i + 1} should be allowed`);
+  }
+  assert.equal(take(), false, 'the 11th message in a burst should be refused');
+});

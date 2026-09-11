@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import RideCard from '../components/RideCard';
@@ -18,21 +18,27 @@ export default function MyRides() {
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState('');
 
-  const load = useCallback(async () => {
-    setStatus('loading');
-    try {
-      const { rides: results } = await api.listMyRides();
-      setRides(results);
-      setStatus('ready');
-    } catch (err) {
-      setError(err.message);
-      setStatus('error');
-    }
-  }, []);
+  const [reloadKey, setReloadKey] = useState(0);
+  const load = () => setReloadKey((key) => key + 1);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+    api
+      .listMyRides()
+      .then(({ rides: results }) => {
+        if (cancelled) return;
+        setRides(results);
+        setStatus('ready');
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err.message);
+        setStatus('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
 
   const active = rides.filter((ride) => ACTIVE.includes(ride.status));
   const past = rides.filter((ride) => !ACTIVE.includes(ride.status));

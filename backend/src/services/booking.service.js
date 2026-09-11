@@ -10,7 +10,7 @@
  * credentials supplied as environment variables (none are read here).
  */
 
-const UBER_CLIENT_ID = process.env.UBER_CLIENT_ID || null; // optional attribution only
+const env = require('../config/env');
 
 function buildBookingLinks(ride) {
   const [pickupLng, pickupLat] = ride.pickupLocation.coordinates;
@@ -24,7 +24,7 @@ function buildBookingLinks(ride) {
   uber.searchParams.set('dropoff[latitude]', dropLat);
   uber.searchParams.set('dropoff[longitude]', dropLng);
   uber.searchParams.set('dropoff[nickname]', ride.dropLocation.name);
-  if (UBER_CLIENT_ID) uber.searchParams.set('client_id', UBER_CLIENT_ID);
+  if (env.uberClientId) uber.searchParams.set('client_id', env.uberClientId);
 
   const ola = new URL('https://book.olacabs.com/');
   ola.searchParams.set('lat', pickupLat);

@@ -108,3 +108,60 @@ test('rate limit headers are advertised', async () => {
   const { headers } = await call('/api/health');
   assert.ok(headers.get('ratelimit-limit'), 'expected a RateLimit-Limit header');
 });
+
+test('every ride route requires authentication, and only the public ones do not', async () => {
+  // The whole authorization surface in one place: if a route is added to the
+  // ride router without requireAuth, this fails.
+  const PROTECTED = [
+    ['GET', '/api/auth/me'],
+    ['GET', '/api/rides'],
+    ['GET', '/api/rides/mine'],
+    ['POST', '/api/rides'],
+    ['GET', '/api/rides/507f1f77bcf86cd799439011'],
+    ['POST', '/api/rides/507f1f77bcf86cd799439011/join'],
+    ['POST', '/api/rides/507f1f77bcf86cd799439011/leave'],
+    ['PATCH', '/api/rides/507f1f77bcf86cd799439011/cancel'],
+    ['PATCH', '/api/rides/507f1f77bcf86cd799439011/complete'],
+    ['PATCH', '/api/rides/507f1f77bcf86cd799439011/fare'],
+    ['GET', '/api/rides/507f1f77bcf86cd799439011/messages'],
+  ];
+
+  for (const [method, path] of PROTECTED) {
+    const { status } = await call(path, { method });
+    assert.equal(status, 401, `${method} ${path} must reject an anonymous caller`);
+  }
+
+  // These three must stay reachable without a token, or nobody can sign in.
+  const PUBLIC = [
+    ['GET', '/api/health', [200, 503]],
+    ['POST', '/api/auth/signup', [400]],
+    ['POST', '/api/auth/login', [400]],
+  ];
+
+  for (const [method, path, allowed] of PUBLIC) {
+    const { status } = await call(path, method === 'POST' ? json({}) : {});
+    assert.ok(
+      allowed.includes(status),
+      `${method} ${path} should be public (got ${status}, expected one of ${allowed})`
+    );
+  }
+});
+
+test('an expired token is refused', async () => {
+  const jwt = require('jsonwebtoken');
+  const expired = jwt.sign({ sub: '507f1f77bcf86cd799439011' }, process.env.JWT_SECRET, {
+    expiresIn: -60,
+  });
+  const { status, body } = await call('/api/rides', {
+    headers: { Authorization: `Bearer ${expired}` },
+  });
+  assert.equal(status, 401);
+  assert.equal(body.error.message, 'Invalid or expired token');
+});
+
+test('a token signed with a different secret is refused', async () => {
+  const jwt = require('jsonwebtoken');
+  const forged = jwt.sign({ sub: '507f1f77bcf86cd799439011' }, 'attacker-chosen-secret');
+  const { status } = await call('/api/rides', { headers: { Authorization: `Bearer ${forged}` } });
+  assert.equal(status, 401);
+});

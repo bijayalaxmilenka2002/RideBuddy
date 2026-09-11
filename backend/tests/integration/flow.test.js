@@ -261,3 +261,50 @@ dbTest('a missing ride is a 404 and a malformed id is a 400', async () => {
   assert.equal((await call('/api/rides/507f1f77bcf86cd799439011', { token })).status, 404);
   assert.equal((await call('/api/rides/not-an-id', { token })).status, 400);
 });
+
+dbTest('contact details are visible to members and hidden from everyone else', async () => {
+  const admin = await makeUser('Admin');
+  const rider = await makeUser('Rider');
+  const outsider = await makeUser('Outsider');
+  const created = await call('/api/rides', { method: 'POST', body: ridePayload(), token: admin.token });
+  const id = created.body.ride._id;
+  await call(`/api/rides/${id}/join`, { method: 'POST', token: rider.token });
+
+  const asMember = await call(`/api/rides/${id}`, { token: rider.token });
+  assert.ok(asMember.body.ride.admin.email, 'a co-rider needs the admin contact');
+  assert.ok(asMember.body.ride.members.every((m) => m.phone));
+
+  const asOutsider = await call(`/api/rides/${id}`, { token: outsider.token });
+  assert.equal(asOutsider.body.ride.admin.name, asMember.body.ride.admin.name);
+  assert.equal(asOutsider.body.ride.admin.email, undefined);
+  assert.equal(asOutsider.body.ride.admin.phone, undefined);
+  assert.ok(asOutsider.body.ride.members.every((m) => m.email === undefined && m.phone === undefined));
+});
+
+dbTest('discovery never exposes contact details', async () => {
+  const admin = await makeUser('Admin');
+  await call('/api/rides', { method: 'POST', body: ridePayload(), token: admin.token });
+
+  const stranger = await makeUser('Stranger');
+  const { body } = await call('/api/rides', { token: stranger.token });
+  assert.equal(body.rides.length, 1);
+  assert.equal(body.rides[0].admin.email, undefined);
+  assert.equal(body.rides[0].admin.phone, undefined);
+  // The raw JSON must not carry them anywhere either.
+  assert.equal(JSON.stringify(body).includes('@example.com'), false);
+});
+
+dbTest('a departed ride cannot be joined through a shared link', async () => {
+  const mongoose = require('mongoose');
+  const admin = await makeUser('Admin');
+  const created = await call('/api/rides', { method: 'POST', body: ridePayload(), token: admin.token });
+  const id = created.body.ride._id;
+
+  // The API refuses a past departureTime on create, so age it directly.
+  await mongoose.model('Ride').updateOne({ _id: id }, { departureTime: new Date(Date.now() - 60_000) });
+
+  const rider = await makeUser('Rider');
+  const joined = await call(`/api/rides/${id}/join`, { method: 'POST', token: rider.token });
+  assert.equal(joined.status, 409);
+  assert.match(joined.body.error.message, /departed/i);
+});

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import StatusBadge from '../components/StatusBadge';
@@ -17,22 +17,28 @@ export default function RideDetail() {
   const [fareInput, setFareInput] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async () => {
-    setStatus('loading');
-    try {
-      const { ride: result } = await api.getRide(id);
-      setRide(result);
-      setFareInput(result.totalFare ?? '');
-      setStatus('ready');
-    } catch (err) {
-      setError(err.message);
-      setStatus('error');
-    }
-  }, [id]);
+  const [reloadKey, setReloadKey] = useState(0);
+  const load = () => setReloadKey((key) => key + 1);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+    api
+      .getRide(id)
+      .then(({ ride: result }) => {
+        if (cancelled) return;
+        setRide(result);
+        setFareInput(result.totalFare ?? '');
+        setStatus('ready');
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err.message);
+        setStatus('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, reloadKey]);
 
   /** Runs an admin/member action and folds the fresh ride back into state. */
   const run = async (action) => {
@@ -91,7 +97,15 @@ export default function RideDetail() {
             <ul className="ride-detail__members">
               {ride.members.map((member) => (
                 <li key={member._id}>
-                  <span>{member.name}</span>
+                  <div className="ride-detail__member">
+                    <span>{member.name}</span>
+                    {/* The API sends contact details to pool members only. */}
+                    {member.phone && (
+                      <a className="ride-detail__contact" href={`tel:${member.phone}`}>
+                        {member.phone}
+                      </a>
+                    )}
+                  </div>
                   {String(member._id) === String(ride.admin._id) && (
                     <span className="badge">ADMIN</span>
                   )}

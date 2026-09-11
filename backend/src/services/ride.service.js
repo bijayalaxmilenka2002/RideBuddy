@@ -66,6 +66,10 @@ async function joinRide(ride, user) {
   if (ride.status === RIDE_STATUS.CANCELLED) throw ApiError.conflict('This ride was cancelled');
   if (ride.status === RIDE_STATUS.COMPLETED) throw ApiError.conflict('This ride is already completed');
   if (ride.status === RIDE_STATUS.LOCKED) throw ApiError.conflict('This ride is full');
+  // Discovery hides departed rides, but the id is guessable from a shared link.
+  if (new Date(ride.departureTime).getTime() <= Date.now()) {
+    throw ApiError.conflict('This ride has already departed');
+  }
   if (ride.members.some((member) => isSameUser(member, user))) {
     throw ApiError.conflict('You have already joined this ride');
   }

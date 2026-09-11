@@ -1,0 +1,14 @@
+{
+  "name": "ridebuddy",
+  "private": true,
+  "description": "RideBuddy - ride pooling and fare splitting. Convenience scripts for running both halves without Docker.",
+  "scripts": {
+    "install:all": "npm --prefix backend install && npm --prefix frontend install",
+    "dev:api": "npm --prefix backend run dev",
+    "dev:web": "npm --prefix frontend run dev",
+    "seed": "npm --prefix backend run seed",
+    "test": "npm --prefix backend test",
+    "lint": "npm --prefix frontend run lint",
+    "build": "npm --prefix frontend run build"
+  }
+}

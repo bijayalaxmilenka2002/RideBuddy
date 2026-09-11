@@ -7,6 +7,25 @@ const { sendMessageSchema } = require('../validators/message.validators');
 
 const roomFor = (rideId) => `ride:${rideId}`;
 
+// The REST API is rate limited; the socket needs its own budget or a client
+// can flood a ride's chat and the Message collection over one connection.
+const MESSAGE_BURST = 10;
+const MESSAGE_REFILL_MS = 3000;
+
+/** Token bucket: 10 messages up front, one back every 3 seconds. */
+function createMessageBudget() {
+  let tokens = MESSAGE_BURST;
+  let last = Date.now();
+  return function take() {
+    const now = Date.now();
+    tokens = Math.min(MESSAGE_BURST, tokens + (now - last) / MESSAGE_REFILL_MS);
+    last = now;
+    if (tokens < 1) return false;
+    tokens -= 1;
+    return true;
+  };
+}
+
 const isObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value || ''));
 
 /**
@@ -34,6 +53,8 @@ async function isRideMember(rideId, userId) {
 }
 
 function registerChatHandlers(io, socket) {
+  const spendMessageToken = createMessageBudget();
+
   socket.on(
     'ride:join',
     safeHandler('ride:join', async (rideId, ack) => {
@@ -56,6 +77,10 @@ function registerChatHandlers(io, socket) {
     safeHandler('message:send', async (payload, ack) => {
       const parsed = sendMessageSchema.safeParse({ message: payload?.message });
       if (!parsed.success) return ack?.({ ok: false, error: 'Message cannot be empty' });
+
+      if (!spendMessageToken()) {
+        return ack?.({ ok: false, error: 'You are sending messages too quickly' });
+      }
 
       const { rideId } = payload || {};
       // Never trust the room membership alone - re-verify against the database.
@@ -83,4 +108,4 @@ function registerChatHandlers(io, socket) {
   );
 }
 
-module.exports = { registerChatHandlers, roomFor, isRideMember };
+module.exports = { registerChatHandlers, roomFor, isRideMember, createMessageBudget };

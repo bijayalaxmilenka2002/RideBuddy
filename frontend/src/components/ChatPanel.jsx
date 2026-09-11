@@ -52,7 +52,13 @@ export default function ChatPanel({ rideId }) {
     if (!text || status !== 'ready') return;
 
     socketRef.current.emit('message:send', { rideId, message: text }, (response) => {
-      if (!response?.ok) setError(response?.error || 'Message could not be sent');
+      if (response?.ok) {
+        setError('');
+        return;
+      }
+      // Put the text back so a rejected message is not silently lost.
+      setError(response?.error || 'Message could not be sent');
+      setDraft(text);
     });
     setDraft('');
   };

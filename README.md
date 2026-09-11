@@ -24,26 +24,38 @@ docs/       Baseline notes and design reference
 
 ### The quick way: one command
 
+Works the same in Windows PowerShell, macOS and Linux. You need Docker Desktop.
+
 ```bash
 docker compose up
 ```
 
-That starts MongoDB, the API and the web client together, then open
+That starts MongoDB, the API and the web client together. Then open
 <http://localhost:5173>. No MongoDB install, no Atlas account, no `.env` to
 fill in. The database persists in a Docker volume between runs.
 
-To fill it with demo commuters and ride pools:
+In a second terminal, fill it with demo commuters and ride pools:
 
 ```bash
 docker compose exec api npm run seed
 ```
 
-It prints the logins it created (all with the password `ridebuddy123`).
+It prints the logins it creates (all with the password `ridebuddy123`).
+
+| Service | URL | Notes |
+| --- | --- | --- |
+| Web client | <http://localhost:5173> | Vite dev server, hot reload |
+| API | <http://localhost:5000> | REST + Socket.IO |
+| Health probe | <http://localhost:5000/api/health> | Reports the database link |
+| MongoDB | `mongodb://localhost:27017/ridebuddy` | Exposed for Compass etc. |
+
+Stop with `Ctrl+C`; `docker compose down -v` also deletes the database volume.
 
 ### The manual way
 
 You need Node.js 18+ and a MongoDB instance (local `mongod` or a free Atlas
-cluster).
+cluster). From the repository root, `npm run install:all` installs both halves,
+and `npm run dev:api` / `npm run dev:web` run them in two terminals.
 
 #### Backend
 
@@ -146,13 +158,38 @@ exactly what is copied and what is inferred.
 Every colour, size, radius and shadow resolves through
 `frontend/src/styles/tokens.css`, so re-skinning is a one-file edit.
 
-## Tests
+## Environment variables
+
+Nothing is hard-coded. Copy the examples and edit:
+
+| File | Variable | Required | Purpose |
+| --- | --- | --- | --- |
+| `backend/.env` | `MONGO_URI` | **yes** | Connection string |
+| | `JWT_SECRET` | **yes** | Signs tokens; any long random string |
+| | `PORT` | no (5000) | API port |
+| | `NODE_ENV` | no | `development` / `production` |
+| | `JWT_EXPIRES_IN` | no (7d) | Token lifetime |
+| | `CORS_ORIGINS` | no | Comma-separated browser origins |
+| | `UBER_CLIENT_ID` | no | Attribution only on the hand-off link |
+| `frontend/.env` | `VITE_API_URL` | no | API base URL; unset uses the dev proxy |
+| | `VITE_DEV_API_TARGET` | no | Where `npm run dev` proxies to |
+| `./.env` | `JWT_SECRET`, `CORS_ORIGINS` | no | Optional overrides for Docker Compose |
+
+The API refuses to start without `MONGO_URI` and `JWT_SECRET`, and prints what
+to set rather than a stack trace. `VITE_*` values are compiled into the browser
+bundle, so never put a secret in them.
+
+## Tests and checks
 
 ```bash
 cd backend
-npm test              # everything; database tests skip if no Mongo is reachable
-npm run test:unit     # business rules + the HTTP stack, no database needed
-npm run test:integration   # full flow; needs MONGO_URI
+npm test                   # 58 pass here; the 28 database tests skip without Mongo
+npm run test:unit          # business rules + the HTTP stack, no database needed
+npm run test:integration    # full flow; needs MONGO_URI
+
+cd ../frontend
+npm run lint               # ESLint, including the React hooks rules
+npm run build              # production build
 ```
 
 `test:unit` covers fare splitting, capacity derivation, GeoJSON validation, the
@@ -171,7 +208,22 @@ repository ships `render.yaml` and `backend/Dockerfile`.
 ## Security
 
 bcrypt password hashing, JWT auth, protected routes, admin and membership
-authorization, zod input validation, centralized error handling, Helmet, CORS
-allow-list, and rate limiting (tighter on the auth endpoints). Password hashes
-are excluded from queries by default and never serialized. All secrets come
-from environment variables; `.env` is gitignored.
+authorization, zod input validation (which also strips unknown keys, so a
+client cannot set `maxCapacity` or `status`), centralized error handling,
+Helmet, a CORS allow-list, and rate limiting - tighter on the auth endpoints,
+and a separate token bucket on the chat socket. Password hashes are excluded
+from queries by default and never serialized.
+
+**Contact details stay inside a pool.** `GET /rides` and `GET /rides/:id`
+return names only to a caller who is not a member; email and phone are added
+for members, who need them to coordinate. Without that, any account could page
+through discovery and harvest every user's phone number.
+
+All secrets come from environment variables, and every `.env` is gitignored.
+
+## Repository layout notes
+
+`docker-compose.yml` runs the whole stack; `backend/Dockerfile` builds the API
+image for any container host; `render.yaml` is a one-click Render blueprint.
+The root `package.json` only holds convenience scripts - it has no
+dependencies.
